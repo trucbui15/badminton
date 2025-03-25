@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { addDoc, collection } from "firebase/firestore"; // ✅ Import Firestore
 import { db } from "@/app/source/firebaseConfig"; // ✅ Đảm bảo bạn đã import cấu hình Firestore
-function FormBooking({
+function FormBooking({  
   valueName,
   handleChangeName,
   valuePhoneNumber,
@@ -148,7 +148,7 @@ function FormBooking({
     };
   
     try {
-      await addDoc(collection(db, "bookings"), bookingData);
+      await addDoc(collection(db, "users"), bookingData);
       alert("Đặt sân thành công!");
       router.push("/homeuser"); // Chuyển trang sau khi đặt thành công
     } catch (error) {
@@ -160,6 +160,7 @@ function FormBooking({
 
   return (
     <form className="bg-white/80 backdrop-blur-md shadow-lg rounded-xl p-6 sm:p-8 space-y-4 border border-gray-200">
+      
       <div>
         <label className="block text-gray-700 font-semibold mb-1">Họ Tên</label>
         <Input
@@ -257,7 +258,7 @@ function FormBooking({
           Đặt Sân
         </button>
       </div>
-    </form>
+    </form> 
   );
 }
 
