@@ -1,40 +1,32 @@
 "use client";
- 
-import { Input, Select } from "antd";
-import { useState, useEffect } from "react";
-import dayjs from "dayjs";
-import type { Dayjs } from "dayjs";
-import { DatePicker } from 'antd';
-import FormBooking from "@/app/user/components/form"
-import {db} from "@/app/source/firebaseConfig";
-import { collection, setDoc, getDocs, doc } from "firebase/firestore";
 
+import { useState, useEffect } from "react";
+import { collection, getDocs, doc } from "@firebase/firestore";
+import { db } from "@/app/source/firebaseConfig"; 
+import Image from "next/image";
 
 export default function Home() {
+  const [courts, setCourts] = useState<any[]>([]);
 
-  const [valueName, setValueName] = useState("");
-  const [valuePhoneNumber, setValuePhoneNumber] = useState("");
-  const [valueEmail, setValueEmail] = useState(""); // ✅ Thêm state lưu email
-  const [isComposing, setIsComposing] = useState(false);
+  useEffect(() => {
+    const fetchCourts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "courts"));
+        const courtList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCourts(courtList);
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu sân:", error);
+      }
+    };
 
-  const handleChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isComposing) return;
-    const inputValue = e.target.value.replace(/[^a-zA-ZÀ-ỹ\s]/g, ""); 
-    setValueName(inputValue);
-  };
+    fetchCourts();
+  }, []);
 
-  const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value.replace(/[^0-9]/g, "");
-    setValuePhoneNumber(inputValue);
-  };
-  
-  const handleChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValueEmail(e.target.value); // ✅ Cập nhật state email
-  };
-
-  
   return (
-    <div className="bg-[url('/images/bgbadminton.jpg')] bg-cover bg-center h-screen w-full gap-[20px] flex flex-col">
+    <div className="bg-[url('/images/bgbadminton.jpg')] bg-cover bg-center min-h-screen w-full flex flex-col overflow-hidden p-4">
       <div className="flex justify-between">
         <div className="flex items-center gap-2 text-white">
           <div className="w-6 h-6 bg-yellow-500 rounded-full"></div>
@@ -43,26 +35,38 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex">
-        <div className="flex flex-row gap-4 items-start mt-20 justify-start w-full">
-          <div className="flex flex-col items-center text-center text-white w-[60vw]">
-            <h2 className="text-4xl font-bold">Cuộc Sống Giống Như Môn Cầu Lông</h2>
-            <p className="max-w-xl text-lg">Người Phát Cầu Tốt Hiếm Khi Là Người Thua Cuộc.</p>
-          </div>
+      <div className="flex flex-col items-center mt-10">
+        <h2 className="text-4xl font-bold text-white">Danh Sách Sân</h2>
+        <p className="text-lg text-white">Chọn sân phù hợp để đặt lịch ngay!</p>
 
-          <div className="w-full max-w-md">
-            <FormBooking
-              valueName={valueName}
-              handleChangeName={handleChangeName}
-              valuePhoneNumber={valuePhoneNumber}
-              handleChangePhoneNumber={handleChangePhoneNumber}
-              valueEmail={valueEmail} // ✅ Truyền giá trị email
-              handleChangeEmail={handleChangeEmail} // ✅ Truyền hàm cập nhật email
-            />
-          </div>
+        {/* Danh sách sân */}
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-6">
+          {courts.length > 0 ? (
+            courts.map((court) => (
+              <div key={court.id} className="bg-white p-4 rounded-lg shadow-md w-60">
+                <div className="w-full h-40 relative">
+                  <Image
+                    src={court.imageUrl || "/images/default-court.jpg"}
+                    alt={court.id}
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-md"
+                  />
+                </div>
+                {/* <h3 className="text-lg font-semibold mt-2 text-center">{court.name}</h3> */}
+                {/* <p className="text-gray-600 text-center"> {court.name}</p> */}
+                <p className="text-gray-600 text-center">Số sân: {court.courtNumber}</p>
+                <p className="text-blue-500 font-bold text-center">{court.type}</p>
+                <button className="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                  Xem Ngay
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-white mt-4">Đang tải danh sách sân...</p>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
