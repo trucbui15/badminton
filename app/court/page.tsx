@@ -8,6 +8,7 @@ export default function BadmintonSchedule() {
 
     useEffect(() => {
       setToday(new Date()); // Cập nhật ngày hiện tại khi component mount
+      
     }, []);
   
     if (!today) return <p className="text-center text-gray-500">Đang tải...</p>;
