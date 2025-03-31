@@ -1,144 +1,244 @@
+"use client"; // Next.js App Router
+
 import { useState, useEffect } from "react";
-import { db } from "@/app/source/firebaseConfig";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import { message } from "antd";
+import { Input, Select, DatePicker, message } from "antd";
+import dayjs from "dayjs";
 
-export default function BookingPage() {
-  const [courts, setCourts] = useState([]);
-  const [selectedCourt, setSelectedCourt] = useState(null);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+export default function BookingModal({ court }: { court: number }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    date: null as dayjs.Dayjs | null,
+    startTime: "",
+    duration: "1h", // Mặc định 1 tiếng
+  });
+  const [error, setError] = useState("");
 
-  // Lấy danh sách sân từ Firestore
-  useEffect(() => {
-    const fetchCourts = async () => {
-      try {
-        const courtsCollection = collection(db, "courts");
-        const courtsSnapshot = await getDocs(courtsCollection);
-        const courtsList = courtsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setCourts(courtsList);
-      } catch (error) {
-        message.error("Lỗi khi tải danh sách sân!");
-        console.error(error);
-      }
-    };
-    fetchCourts();
-  }, []);
-
-  // Kiểm tra sân trống trước khi đặt
-  const checkAvailability = async () => {
-    if (!selectedCourt || !date || !time || !name || !email || !phone) {
-      message.warning("Vui lòng nhập đầy đủ thông tin!");
-      return false;
-    }
-    const bookingsRef = collection(db, "bookings");
-    const q = query(
-      bookingsRef,
-      where("courtId", "==", selectedCourt),
-      where("date", "==", date),
-      where("time", "==", time)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.empty;
+  // Hàm cập nhật formData
+  const handleChange = (field: string, value: string | dayjs.Dayjs | null) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Xử lý đặt sân
-  const handleBooking = async () => {
-    setLoading(true);
-    message.loading("Đang xử lý đặt sân...");
+  // Xử lý khi nhập họ tên: chỉ cho phép chữ và khoảng trắng
+  const handleChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value.replace(/[^a-zA-ZÀ-ỹ\s]/g, "");
+    handleChange("name", inputValue);
+  };
 
-    const isAvailable = await checkAvailability();
-    if (!isAvailable) {
-      message.error("Sân đã có người đặt. Vui lòng chọn giờ khác!");
-      setLoading(false);
+  // Xử lý khi nhập số điện thoại: chỉ cho phép số
+  const handleChangePhone = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value.replace(/\D/g, "");
+    handleChange("phone", inputValue);
+  };
+
+  // Xử lý khi nhập email: cập nhật email trong onChange
+  const handleChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleChange("email", e.target.value);
+  };
+
+  // Khi ô email mất focus, thêm hậu tố nếu cần
+  const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    if (value && !value.includes("@")) {
+      value = value + "@gmai.com";
+      handleChange("email", value);
+    }
+  };
+
+  // Tạo danh sách giờ từ 05:00 đến 21:00 (mỗi 30 phút)
+  const generateTimeSlots = () => {
+    const slots = [];
+    let start = dayjs().hour(5).minute(0); // 05:00
+    const end = dayjs().hour(21).minute(0); // 21:00
+
+    // Bao gồm cả mốc 21:00
+    while (start.isBefore(end) || start.isSame(end)) {
+      slots.push({ label: start.format("HH:mm"), value: start.format("HH:mm") });
+      start = start.add(30, "minute");
+    }
+    return slots;
+  };
+
+  // Danh sách khoảng thời gian
+  const durationOptions = [
+    { label: "30 phút", value: "30m" },
+    { label: "1 tiếng", value: "1h" },
+    { label: "2 tiếng", value: "2h" },
+    { label: "3 tiếng", value: "3h" },
+  ];
+
+  // Tính giờ kết thúc dựa trên giờ bắt đầu và thời gian chọn
+  const calculateEndTime = () => {
+    if (!formData.startTime) return "";
+    const baseTime = dayjs(formData.startTime, "HH:mm");
+    let addMinutes = 60; // Mặc định 1h
+    switch (formData.duration) {
+      case "30m":
+        addMinutes = 30;
+        break;
+      case "1h":
+        addMinutes = 60;
+        break;
+      case "2h":
+        addMinutes = 120;
+        break;
+      case "3h":
+        addMinutes = 180;
+        break;
+      default:
+        addMinutes = 60;
+    }
+    return baseTime.add(addMinutes, "minute").format("HH:mm");
+  };
+
+  // Hàm kiểm tra các điều kiện của form
+  const validateBooking = () => {
+    const { name, phone, email, date, startTime, duration } = formData;
+    if (!name || !phone || !email || !date || !startTime || !duration) {
+      return "Vui lòng nhập đầy đủ thông tin!";
+    }
+    // Kiểm tra số điện thoại phải đủ 10 chữ số
+    if (phone.length !== 10) {
+      return "Số điện thoại phải có 10 chữ số!";
+    }
+    // Tính giờ kết thúc và kiểm tra không vượt quá 22:00
+    const baseTime = dayjs(startTime, "HH:mm");
+    let addMinutes = 60;
+    switch (duration) {
+      case "30m":
+        addMinutes = 30;
+        break;
+      case "1h":
+        addMinutes = 60;
+        break;
+      case "2h":
+        addMinutes = 120;
+        break;
+      case "3h":
+        addMinutes = 180;
+        break;
+      default:
+        addMinutes = 60;
+    }
+    const endTime = baseTime.add(addMinutes, "minute");
+    const limitTime = dayjs("22:00", "HH:mm");
+    if (endTime.isAfter(limitTime)) {
+      return "Thời gian kết thúc không được sau 22:00";
+    }
+    return "";
+  };
+
+  useEffect(() => {
+    const err = validateBooking();
+    setError(err);
+  }, [
+    formData.startTime,
+    formData.duration,
+    formData.name,
+    formData.phone,
+    formData.email,
+    formData.date,
+  ]);
+
+  // Xử lý khi đặt sân
+  const handleSubmit = () => {
+    const err = validateBooking();
+    if (err) {
+      message.error(err);
       return;
     }
-
-    await addDoc(collection(db, "bookings"), {
-      name,
-      email,
-      phone,
-      courtId: selectedCourt,
-      date,
-      time,
-      status: "Đã đặt"
-    });
-
     message.success("Đặt sân thành công!");
-    setLoading(false);
+    console.log("Dữ liệu đặt sân:", {
+      ...formData,
+      endTime: calculateEndTime(),
+    });
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h2 className="text-xl font-bold mb-4">Đặt sân cầu lông</h2>
-      
-      <input 
-        className="border p-2 w-full mb-2" 
-        placeholder="Họ và tên" 
-        value={name} 
-        onChange={e => setName(e.target.value)} 
-      />
-      <input 
-        className="border p-2 w-full mb-2" 
-        placeholder="Email" 
-        value={email} 
-        onChange={e => setEmail(e.target.value)} 
-      />
-      <input 
-        className="border p-2 w-full mb-2" 
-        placeholder="Số điện thoại" 
-        value={phone} 
-        onChange={e => setPhone(e.target.value)} 
-      />
-      <input 
-        type="date" 
-        className="border p-2 w-full mb-2" 
-        value={date} 
-        onChange={e => setDate(e.target.value)} 
+    <div className="p-4 space-y-4">
+      <p className="font-bold text-orange-500">Sân số {court}</p>
+
+      <Input
+        placeholder="Họ và tên"
+        size="large"
+        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+        value={formData.name}
+        onChange={handleChangeName}
       />
 
-      {/* Chọn Giờ */}
-      <select 
-        className="border p-2 w-full mb-2" 
-        onChange={e => setTime(e.target.value)}
-      >
-        <option value="">Chọn giờ</option>
-        <option value="14:00">14:00</option>
-        <option value="15:00">15:00</option>
-      </select>
+      <Input
+        placeholder="Số điện thoại"
+        size="large"
+        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+        value={formData.phone}
+        onChange={handleChangePhone}
+      />
 
-      {/* Chọn Sân */}
-      {courts.length === 0 ? (
-        <p className="text-gray-500">Chưa có sân nào.</p>
-      ) : (
-        // <select 
-        //   className="border p-2 w-full mb-2" 
-        //   onChange={e => {
-        //     const selected = courts.find(c => c.id === e.target.value);
-        //     setSelectedCourt(selected ? selected.id : null);
-        //   }}
-        // >
-        //   <option value="">Chọn sân</option>
-        //   {courts.map(court => (
-        //     <option key={court.id} value={court.id}>
-        //       {court.name} ({court.type})
-        //     </option>
-        //   ))}
-        // </select>
-      )}
+      <Input
+        placeholder="Email"
+        size="large"
+        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+        value={formData.email}
+        onChange={handleChangeEmail}
+        onBlur={handleEmailBlur}
+      />
 
-      {/* Nút đặt sân */}
-      <button 
-        className={`bg-blue-500 text-white px-4 py-2 rounded w-full ${loading ? "opacity-50 cursor-not-allowed" : ""}`} 
-        onClick={handleBooking}
-        disabled={loading}
-      >
-        {loading ? "Đang đặt sân..." : "Đặt sân"}
-      </button>
+      {/* Chọn ngày */}
+      <DatePicker
+        className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+        value={formData.date}
+        onChange={(date) => handleChange("date", date)}
+        format="DD/MM/YYYY"
+        placeholder="Chọn ngày"
+        disabledDate={(current) => current && current.isBefore(dayjs(), "day")}
+      />
+
+      <div className="flex gap-4">
+        <div className="w-1/2">
+          <label className="block text-gray-700 font-semibold mb-1">
+            Thời Gian Bắt Đầu
+          </label>
+          <Select
+            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+            placeholder="Chọn giờ bắt đầu"
+            options={generateTimeSlots()}
+            value={formData.startTime}
+            onChange={(value) => handleChange("startTime", value)}
+          />
+        </div>
+
+        <div className="w-1/2">
+          <label className="block text-gray-700 font-semibold mb-1">
+            Thời Gian Kết Thúc
+          </label>
+          <Select
+            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+            placeholder="Chọn thời gian chơi"
+            options={durationOptions}
+            value={formData.duration}
+            onChange={(value) => handleChange("duration", value)}
+          />
+          {formData.startTime && (
+            <p className="mt-2 text-gray-700">
+              Giờ kết thúc: {calculateEndTime()}
+            </p>
+          )}
+          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center mt-4">
+        <button
+          onClick={handleSubmit}
+          className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 ${
+            error ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={!!error}
+        >
+          Đặt sân
+        </button>
+      </div>
     </div>
   );
 }

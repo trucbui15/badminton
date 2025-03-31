@@ -1,72 +1,101 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { collection, getDocs, doc } from "@firebase/firestore";
-import { db } from "@/app/source/firebaseConfig"; 
 import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Input, Modal } from "antd";
+import BookingModal from "@/app/user/components/form";
+import { courtsData } from "./data/data";
 
-export default function Home() {
-  const [courts, setCourts] = useState<any[]>([]);
+
+
+export default function BadmintonSchedule() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [valueName, setValueName] = useState("");
+  const [valuePhoneNumber, setValuePhoneNumber] = useState("");
+  const [valueEmail, setValueEmail] = useState("");
+  const [selectId, setSelectId] = useState(1);
+
+  const handleChangeName = (e: React.ChangeEvent<HTMLInputElement>) => setValueName(e.target.value);
+  const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) => setValuePhoneNumber(e.target.value);
+  const handleChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) => setValueEmail(e.target.value);
+
+  const [today, setToday] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(0);
 
   useEffect(() => {
-    const fetchCourts = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "courts"));
-        const courtList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCourts(courtList);
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu sân:", error);
-      }
-    };
-
-    fetchCourts();
+    setToday(new Date());
   }, []);
 
+  if (!today) return <p className="text-center text-gray-500">Đang tải...</p>;
+
+  const weekdays = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+  const todayIndex = today.getDay();
+
+  const next7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    return {
+      day: weekdays[(todayIndex + i) % 7],
+      date: date.toLocaleDateString("vi-VN"),
+    };
+  });
+
   return (
-    <div className="bg-[url('/images/bgbadminton.jpg')] bg-cover bg-center min-h-screen w-full flex flex-col overflow-hidden p-4">
-      <div className="flex justify-between">
-        <div className="flex items-center gap-2 text-white">
-          <div className="w-6 h-6 bg-yellow-500 rounded-full"></div>
-          <div className="w-6 h-6 bg-blue-600 rounded-full -ml-2"></div>
-          <h1 className="text-xl font-bold">CourtBadminton</h1>
+    <div className="bg-gray-100 text-orange-400 min-h-screen p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center border-2 border-orange-500 p-4 mb-6">
+          <h1 className="text-2xl font-bold text-orange-400">THẾ GIỚI CẦU LÔNG</h1>
+          <p className="text-sm">0393118322</p>
+          <p className="text-xs">Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình Định, Tx. An Nhơn</p>
         </div>
-      </div>
 
-      <div className="flex flex-col items-center mt-10">
-        <h2 className="text-4xl font-bold text-white">Danh Sách Sân</h2>
-        <p className="text-lg text-white">Chọn sân phù hợp để đặt lịch ngay!</p>
+        <div className="flex justify-around border-b border-gray-300 pb-2 mb-4">
+          {next7Days.map((item, index) => (
+            <button key={index} onClick={()=>{
+              setSelectedDay(index)
+            }}
+              className={`flex flex-col items-center text-orange-400 relative ${selectedDay === index ? "font-bold" : ""}`}>
+              <p className="text-sm">{item.day}</p>
+              <p className="text-xs">{item.date}</p>
+              {selectedDay === index && <span className="absolute -bottom-2 w-full h-1 bg-orange-500 rounded-full"></span>}
+            </button>
+          ))}
+        </div>
 
-        {/* Danh sách sân */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mt-6">
-          {courts.length > 0 ? (
-            courts.map((court) => (
-              <div key={court.id} className="bg-white p-4 rounded-lg shadow-md w-60">
-                <div className="w-full h-40 relative">
-                  <Image
-                    src={court.imageUrl || "/images/default-court.jpg"}
-                    alt={court.id}
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-md"
-                  />
-                </div>
-                {/* <h3 className="text-lg font-semibold mt-2 text-center">{court.name}</h3> */}
-                {/* <p className="text-gray-600 text-center"> {court.name}</p> */}
-                <p className="text-gray-600 text-center">Số sân: {court.courtNumber}</p>
-                <p className="text-blue-500 font-bold text-center">{court.type}</p>
-                <button className="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                  Xem Ngay
-                </button>
+        <div className="grid grid-cols-1 gap-4">
+          {courtsData.map((court) => (
+            <div key={court.id} className="flex gap-10 bg-white p-4 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition"
+              onClick={() => {setIsModalOpen(true)
+              setSelectId(court.id)
+
+              }}>
+              <Image src={court.image} alt={court.name} width={200} height={300} className="rounded-lg" />
+              <div>
+                <h2 className="text-xl font-bold">{court.name}</h2>
+                <p className="text-sm"><span className="text-orange-400">Loại Sân:</span> {court.type}</p>
+                <p className="text-sm"><span className="text-orange-400">Giá Sân:</span> {court.price}</p>
+                <p className="text-xs text-gray-400 mt-2">Cầu lông là thứ tồn tại duy nhất, những thứ còn lại có hay không không quan trọng...</p>
               </div>
-            ))
-          ) : (
-            <p className="text-white mt-4">Đang tải danh sách sân...</p>
-          )}
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        title="Thông báo"
+        open={isModalOpen}
+        onOk={() => setIsModalOpen(false)}
+        onCancel={() => setIsModalOpen(false)}
+      >
+        <h1 className="text-2xl font-bold text-orange-400">THẾ GIỚI CẦU LÔNG</h1>
+        <p className="text-sm">0393118322</p>
+        <p className="text-xs">Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình Định, Tx. An Nhơn</p>
+ 
+        <BookingModal court={selectId} />
+
+      </Modal>
     </div>
   );
 }
