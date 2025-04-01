@@ -1,17 +1,38 @@
 "use client"; // Next.js App Router
 
 import { useState, useEffect } from "react";
-import { Input, Select, DatePicker, message } from "antd";
+import { Input, Select, DatePicker, TimePicker, message } from "antd";
 import dayjs from "dayjs";
+import { courtsData } from "@/app/data/data";
+import { Modal,Image } from "antd";
+// import  from "next/image";
+
+// import { db, collection, getDocs, addDoc, serverTimestamp } from "@/app/source/firebaseConfig";
 
 export default function BookingModal({ court }: { court: number }) {
+  const [isImageOpen, setIsImageOpen] = useState(false);
+  const [email, setEmail] = useState<string>(''); // Explicitly set the type as string
+  const [isValid, setIsValid] = useState<boolean>(true); // Explicitly set the type as boolean
+
+  // Handle email change with correct typing
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    validateEmail(value);
+  };
+
+  // Email validation function
+  const validateEmail = (email: string) => { // Explicitly define the type for email
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    setIsValid(emailRegex.test(email));
+  };
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     date: null as dayjs.Dayjs | null,
     startTime: "",
-    duration: "1h", // Mặc định 1 tiếng
+    duration: "", 
   });
   const [error, setError] = useState("");
 
@@ -38,13 +59,13 @@ export default function BookingModal({ court }: { court: number }) {
   };
 
   // Khi ô email mất focus, thêm hậu tố nếu cần
-  const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    if (value && !value.includes("@")) {
-      value = value + "@gmai.com";
-      handleChange("email", value);
-    }
-  };
+  // const handleEmailBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  //   let value = e.target.value;
+  //   if (value && !value.includes("@")) {
+  //     value = value + "@gmail.com";
+  //     handleChange("email", value);
+  //   }
+  // };
 
   // Tạo danh sách giờ từ 05:00 đến 21:00 (mỗi 30 phút)
   const generateTimeSlots = () => {
@@ -143,102 +164,135 @@ export default function BookingModal({ court }: { court: number }) {
 
   // Xử lý khi đặt sân
   const handleSubmit = () => {
-    const err = validateBooking();
-    if (err) {
-      message.error(err);
-      return;
-    }
-    message.success("Đặt sân thành công!");
-    console.log("Dữ liệu đặt sân:", {
-      ...formData,
-      endTime: calculateEndTime(),
-    });
+   alert("đăng nhập thành công")
+  };
+
+  const pricePerHour = 100000; 
+
+  const calculatePrice = () => {
+    const durationInHours = parseInt(formData.duration, 10);
+    return durationInHours * pricePerHour;
   };
 
   return (
-    <div className="p-4 space-y-4">
-      <p className="font-bold text-orange-500">Sân số {court}</p>
-
-      <Input
-        placeholder="Họ và tên"
-        size="large"
-        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-        value={formData.name}
-        onChange={handleChangeName}
-      />
-
-      <Input
-        placeholder="Số điện thoại"
-        size="large"
-        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-        value={formData.phone}
-        onChange={handleChangePhone}
-      />
-
-      <Input
-        placeholder="Email"
-        size="large"
-        className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-        value={formData.email}
-        onChange={handleChangeEmail}
-        onBlur={handleEmailBlur}
-      />
-
-      {/* Chọn ngày */}
-      <DatePicker
-        className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-        value={formData.date}
-        onChange={(date) => handleChange("date", date)}
-        format="DD/MM/YYYY"
-        placeholder="Chọn ngày"
-        disabledDate={(current) => current && current.isBefore(dayjs(), "day")}
-      />
-
-      <div className="flex gap-4">
-        <div className="w-1/2">
-          <label className="block text-gray-700 font-semibold mb-1">
-            Thời Gian Bắt Đầu
-          </label>
-          <Select
-            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-            placeholder="Chọn giờ bắt đầu"
-            options={generateTimeSlots()}
-            value={formData.startTime}
-            onChange={(value) => handleChange("startTime", value)}
-          />
+      <div className="md:p-4 flex gap-8">
+        {/* Form Đặt Sân (Bên trái) */}
+        <div className="w-1/2 space-y-4">
+          <p className="font-bold text-orange-500">{courtsData[court].name}</p>
+  
+          <div className="space-y-4">
+            {/* Họ và tên */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Họ và Tên</label>
+              <Input
+                placeholder="Họ và tên"
+                size="large"
+                className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+              />
+            </div>
+  
+            {/* Số điện thoại */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Số Điện Thoại</label>
+              <Input
+                placeholder="Số điện thoại"
+                size="large"
+                className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', e.target.value)}
+                pattern="^\d{10}$"
+                maxLength={10}
+                title="Số điện thoại phải có đúng 10 chữ số!"
+                required
+              />
+            </div>
+  
+            {/* Email */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Email</label>
+              <Input
+                placeholder="Email"
+                value={email}
+                onChange={handleEmailChange}
+                className="ant-input ant-input-lg"
+              />
+            </div>
+  
+            {/* Chọn ngày */}
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Chọn Ngày</label>
+              <DatePicker
+                className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                value={formData.date}
+                onChange={(date) => handleChange('date', date)}
+                format="DD/MM/YYYY"
+                placeholder="Chọn ngày"
+                disabledDate={(current) => current && current.isBefore(dayjs(), 'day')}
+              />
+            </div>
+  
+            <div className="flex gap-4">
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-1">Thời Gian Bắt Đầu</label>
+                <Select
+                  className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                  placeholder="Chọn giờ bắt đầu"
+                  options={generateTimeSlots()}
+                  value={formData.startTime}
+                  onChange={(value) => handleChange('startTime', value)}
+                />
+              </div>
+  
+              <div className="w-1/2">
+                <label className="block text-gray-700 font-semibold mb-1">Thời Gian Kết Thúc</label>
+                <Select
+                  className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                  placeholder="Chọn thời gian chơi"
+                  options={durationOptions}
+                  value={formData.duration}
+                  onChange={(value) => handleChange('duration', value)}
+                />
+                {formData.startTime && (
+                  <p className="mt-2 text-gray-700">Giờ kết thúc: {calculateEndTime()}</p>
+                )}
+              </div>
+            </div>
+  
+            <div className="flex items-center justify-center mt-4">
+              <button
+                onClick={handleSubmit}
+                className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 ${error ? 'opacity-50 cursor-not-allowed' : ''}`}
+                // disabled={!!error}
+              >
+                Đặt sân
+              </button>
+            </div>
+          </div>
         </div>
+  
+        {/* Dữ liệu sân (Bên phải) */}
+        <div className="w-1/2 space-y-4">
+        <p className="font-bold text-orange-500">Thông Tin Sân</p>
+        <div className="border md:p-4 p-[4px] rounded-lg flex items-center justify-center">
+          <div className="flex flex-col w-1/2 text-[8px]">
 
-        <div className="w-1/2">
-          <label className="block text-gray-700 font-semibold mb-1">
-            Thời Gian Kết Thúc
-          </label>
-          <Select
-            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-            placeholder="Chọn thời gian chơi"
-            options={durationOptions}
-            value={formData.duration}
-            onChange={(value) => handleChange("duration", value)}
+          <p><strong>Sân:</strong> {courtsData[court].name}</p>
+          <p><strong>Giờ bắt đầu:</strong> {formData.startTime}</p>
+          <p><strong>Giờ kết thúc:</strong> {calculateEndTime()}</p>
+          <p><strong>Tổng tiền:</strong> {calculatePrice()} VND</p>
+          </div>
+          <div className="w-1/2">
+          <Image
+            src={courtsData[court].image}   
+            alt="Sân cầu lông"
+      
+            className="md:w-[200px] md:h-[150px] w-[50px] h-[50px]"
           />
-          {formData.startTime && (
-            <p className="mt-2 text-gray-700">
-              Giờ kết thúc: {calculateEndTime()}
-            </p>
-          )}
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-center mt-4">
-        <button
-          onClick={handleSubmit}
-          className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 ${
-            error ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          disabled={!!error}
-        >
-          Đặt sân
-        </button>
       </div>
     </div>
   );
-}
+  };

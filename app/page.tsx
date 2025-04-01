@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Input, Modal } from "antd";
 import BookingModal from "@/app/user/components/form";
 import { courtsData } from "./data/data";
-
+import { db } from "@/app/source/firebaseConfig";
 
 
 export default function BadmintonSchedule() {
@@ -88,6 +88,8 @@ export default function BadmintonSchedule() {
         open={isModalOpen}
         onOk={() => setIsModalOpen(false)}
         onCancel={() => setIsModalOpen(false)}
+        width="80vw" // Chiếm 80% chiều rộng màn hình
+        centered // Đảm bảo modal hiển thị chính giữa
       >
         <h1 className="text-2xl font-bold text-orange-400">THẾ GIỚI CẦU LÔNG</h1>
         <p className="text-sm">0393118322</p>
