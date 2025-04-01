@@ -178,7 +178,7 @@ export default function BookingModal({ court }: { court: number }) {
       <div className="md:p-4 flex gap-8">
         {/* Form Đặt Sân (Bên trái) */}
         <div className="w-1/2 space-y-4">
-          <p className="font-bold text-orange-500">{courtsData[court].name}</p>
+          <p className="font-bold text-blue-600">{courtsData[court].name}</p>
   
           <div className="space-y-4">
             {/* Họ và tên */}
@@ -263,7 +263,7 @@ export default function BookingModal({ court }: { court: number }) {
             <div className="flex items-center justify-center mt-4">
               <button
                 onClick={handleSubmit}
-                className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 ${error ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`bg-[#1677ff] hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-all duration-300 ${error ? 'opacity-50 cursor-not-allowed' : ''}`}
                 // disabled={!!error}
               >
                 Đặt sân
@@ -274,9 +274,9 @@ export default function BookingModal({ court }: { court: number }) {
   
         {/* Dữ liệu sân (Bên phải) */}
         <div className="w-1/2 space-y-4">
-        <p className="font-bold text-orange-500">Thông Tin Sân</p>
+        <p className="font-bold text-blue-600">Thông Tin Sân</p>
         <div className="border md:p-4 p-[4px] rounded-lg flex items-center justify-center">
-          <div className="flex flex-col w-1/2 text-[8px]">
+          <div className="flex flex-col w-1/2 text-[8px] md:text-[14px] md:gap-[10px]">
 
           <p><strong>Sân:</strong> {courtsData[court].name}</p>
           <p><strong>Giờ bắt đầu:</strong> {formData.startTime}</p>
