@@ -14,6 +14,7 @@
     "badminton-app": "file:",
     "firebase": "^11.5.0",
     "next": "15.2.3",
+    "primereact": "^10.9.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -10,6 +10,7 @@ import { db } from "@/app/source/firebaseConfig";
 
 export default function BadmintonSchedule() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const handleModalClose = () => {setIsModalOpen(false);};
   const [valueName, setValueName] = useState("");
   const [valuePhoneNumber, setValuePhoneNumber] = useState("");
   const [valueEmail, setValueEmail] = useState("");
@@ -54,18 +55,16 @@ export default function BadmintonSchedule() {
   return (
     <div className="bg-blue-50 min-h-screen p-6 flex flex-col items-center justify-center ">
       <div className="">
-      <div className="relative bg-gradient-to-r from-blue-300 to-green-300 text-center border-gray-200 p-8 mb-6 text-gray-800 rounded-lg flex flex-col justify-center items-center shadow-xl">
-  
-     
-  <h1 className="text-4xl font-bold text-blue-600 mb-4">
-    THẾ GIỚI CẦU LÔNG
-  </h1>
-  <p className="text-xl text-blue-500 mb-2">0393118322</p>
-  <p className="text-base text-gray-600 max-w-3xl mx-auto">
-    Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình Định, Tx. An Nhơn
-  </p>
-</div>
-
+        <div className="relative bg-gradient-to-r from-blue-300 to-green-300 text-center border-gray-200 p-8 mb-6 text-gray-800 rounded-lg flex flex-col justify-center items-center shadow-xl">
+          <h1 className="text-4xl font-bold text-blue-600 mb-4">
+            THẾ GIỚI CẦU LÔNG
+          </h1>
+          <p className="text-xl text-blue-500 mb-2">0393118322</p>
+          <p className="text-base text-gray-600 max-w-3xl mx-auto">
+            Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình
+            Định, Tx. An Nhơn
+          </p>
+        </div>
 
         <div className="flex justify-around border-b border-gray-300 pb-2 mb-4">
           {next7Days.map((item, index) => (
@@ -130,13 +129,12 @@ export default function BadmintonSchedule() {
 
       {/* Modal */}
       <Modal
-        title="Thông báo"
-        open={isModalOpen}
-        onOk={() => setIsModalOpen(false)}
-        onCancel={() => setIsModalOpen(false)}
-        width="80vw" // Chiếm 80% chiều rộng màn hình
-        centered // Đảm bảo modal hiển thị chính giữa
-      >
+   footer={null}
+   open={isModalOpen}
+   onCancel={handleModalClose}
+   width="80vw"
+   centered
+>
         <div className="flex flex-col justify-center items-center gap-1">
           <h1 className="text-2xl font-bold text-blue-600">
             THẾ GIỚI CẦU LÔNG
