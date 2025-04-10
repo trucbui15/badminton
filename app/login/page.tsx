@@ -2,24 +2,44 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Form, Input, Button, Card, message } from "antd";
+import { Form, Input, Button, Card, message, notification } from "antd";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/app/source/firebaseConfig";
 
 const Login = () => {
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: { email: string; password: string }) => {
+  const onFinish = async (values: { email: string; password: string}) => {
     setLoading(true);
+    try {
+      const q = query(
+        collection(db, "admins"),
+        where("email","==", values.email),
+        where("password", "==", values.password)
+      );
 
-    // Giả lập kiểm tra tài khoản admin
-    if (values.email === "admin@gmail.com" && values.password === "admin123") {
-      message.success("Đăng nhập thành công!");
-      router.push("/admin");
-    } else {
-      message.error("Sai email hoặc mật khẩu!");
+      const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          console.log("Đăng nhập thành công");
+          notification.open({
+            message: 'Notification Title',
+            description:
+              'A function will be be called after the notification is closed (automatically after the "duration" time of manually).',
+            onClose: close,
+          });
+        
+        router.push("/admin");
+      }else{
+        alert("Sai email hoặc mật khẩu!");
+      }
+    }catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      alert("Đã xảy ra lỗi khi đăng nhập!");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (

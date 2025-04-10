@@ -2,35 +2,41 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Input, Modal } from "antd";
+import { Modal } from "antd";
 import BookingModal from "@/app/user/components/form";
-import { courtsData } from "./data/data";
-import { db } from "@/app/source/firebaseConfig";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/app/source/firebaseConfig"; // Đổi lại path nếu bạn để firebaseConfig ở nơi khác
 
 export default function BadmintonSchedule() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const handleModalClose = () => {setIsModalOpen(false);};
   const [valueName, setValueName] = useState("");
   const [valuePhoneNumber, setValuePhoneNumber] = useState("");
   const [valueEmail, setValueEmail] = useState("");
-  const [selectId, setSelectId] = useState(1);
-
-  const handleChangeName = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setValueName(e.target.value);
-  const handleChangePhoneNumber = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setValuePhoneNumber(e.target.value);
-  const handleChangeEmail = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setValueEmail(e.target.value);
-
+  const [selectId, setSelectId] = useState(0);
+  const [courtsData, setCourtsData] = useState<any[]>([]);
   const [today, setToday] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(0);
 
   useEffect(() => {
+    const fetchCourts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "courts"));
+        const courtsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCourtsData(courtsList);
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu sân:", error);
+      }
+    };
+
+    fetchCourts();
     setToday(new Date());
   }, []);
 
-  if (!today) return <p className="text-center text-gray-500">Đang tải...</p>;
+  if (!today)
+    return <p className="text-center text-gray-500">Đang tải dữ liệu...</p>;
 
   const weekdays = [
     "Chủ Nhật",
@@ -52,9 +58,13 @@ export default function BadmintonSchedule() {
     };
   });
 
+  const handleModalClose = () => setIsModalOpen(false);
+  
+
   return (
-    <div className="bg-blue-50 min-h-screen p-6 flex flex-col items-center justify-center ">
-      <div className="">
+    <div className="bg-blue-50 min-h-screen p-6 flex flex-col items-center justify-center">
+      <div>
+        {/* Header */}
         <div className="relative bg-gradient-to-r from-blue-300 to-green-300 text-center border-gray-200 p-8 mb-6 text-gray-800 rounded-lg flex flex-col justify-center items-center shadow-xl">
           <h1 className="text-4xl font-bold text-blue-600 mb-4">
             THẾ GIỚI CẦU LÔNG
@@ -66,13 +76,12 @@ export default function BadmintonSchedule() {
           </p>
         </div>
 
+        {/* Date Picker */}
         <div className="flex justify-around border-b border-gray-300 pb-2 mb-4">
           {next7Days.map((item, index) => (
             <button
               key={index}
-              onClick={() => {
-                setSelectedDay(index);
-              }}
+              onClick={() => setSelectedDay(index)}
               className={`flex flex-col items-center text-blue-400 relative ${
                 selectedDay === index ? "font-bold" : ""
               }`}
@@ -86,7 +95,8 @@ export default function BadmintonSchedule() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-4  p-[10px] rounded-[10px]">
+        {/* Courts List */}
+        <div className="grid grid-cols-1 gap-4 p-[10px] rounded-[10px]">
           {courtsData.map((court) => (
             <div
               key={court.id}
@@ -106,16 +116,10 @@ export default function BadmintonSchedule() {
               <div className="text-gray-700">
                 <h2 className="text-xl font-bold">{court.name}</h2>
                 <p className="text-sm">
-                  <span className="">
-                    <strong>Loại Sân:</strong>
-                  </span>{" "}
-                  {court.type}
+                  <strong>Loại Sân:</strong> {court.type}
                 </p>
                 <p className="text-sm">
-                  <span className="">
-                    <strong>Giá Sân:</strong>
-                  </span>{" "}
-                  {court.price}
+                  <strong>Giá Sân:</strong> {court.price} VND
                 </p>
                 <p className="text-xs text-gray-400 mt-2">
                   Cầu lông là thứ tồn tại duy nhất, những thứ còn lại có hay
@@ -127,22 +131,20 @@ export default function BadmintonSchedule() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Booking Modal */}
       <Modal
-   footer={null}
-   open={isModalOpen}
-   onCancel={handleModalClose}
-   width="80vw"
-   centered
->
-        <div className="flex flex-col justify-center items-center gap-1">
-          <h1 className="text-2xl font-bold text-blue-600">
-            THẾ GIỚI CẦU LÔNG
-          </h1>
+        footer={null}
+        open={isModalOpen}
+        onCancel={handleModalClose}
+        width="80vw"
+        centered
+      >
+        <div className="flex flex-col justify-center items-center gap-1 mb-4">
+          <h1 className="text-2xl font-bold text-blue-600">THẾ GIỚI CẦU LÔNG</h1>
           <p className="text-sm">0393118322</p>
           <p className="text-xs">
-            Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình
-            Định, Tx. An Nhơn
+            Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình Định,
+            Tx. An Nhơn
           </p>
         </div>
         <BookingModal court={selectId} />
