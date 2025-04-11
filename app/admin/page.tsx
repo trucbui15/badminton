@@ -79,7 +79,7 @@ const AdminPage = () => {
       title: "Thời lượng",
       dataIndex: "duration",
       key: "duration",
-      render: (duration: number) => `${duration}h`,
+      render: (duration: number) => `${duration} giờ`,
     },
     {
       title: "Tổng tiền",

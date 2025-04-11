@@ -1,22 +1,15 @@
 "use client";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs  } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 import { useState, useEffect } from "react";
-import {
-  Input,
-  Select,
-  DatePicker,
-  Typography,
-  Space,
-  Modal,
-  Image,
-  Divider,
-  Button,
-} from "antd";
+import {Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Card, Tag} from "antd";
 import dayjs from "dayjs";
 import { courtsData } from "@/app/data/data";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
+import { useBookings } from "@/app/hooks/useBookings";
+import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
+
 const { Title, Text } = Typography;
 // import  from "next/image";
 
@@ -209,10 +202,35 @@ export default function BookingModal({ court }: { court: number }) {
           const diffMinutes = endMinutes - startMinutes;
           const hours = Math.floor(diffMinutes / 60);
           const minutes = diffMinutes % 60;
-          return `${hours}h${minutes > 0 ? ` ${minutes} phút` : ""}`;
+          return `${hours}${minutes > 0 ? ` ${minutes} phút` : ""}`;
         };
 
         const duration = getDuration(formattedStartTime, calculatedEndTime);
+        const q = query(
+          collection(db, "bookings"),
+          where("courtId", "==", courtsData[court].id),
+          where("date", "==", formattedDate)
+        );
+        const querySnapshot = await getDocs(q);
+        const existingBookings: Booking[] = [];
+  
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          existingBookings.push({
+            startTime: data.startTime,
+            endTime: data.endTime,
+          });
+        });
+  
+        const hasConflict = isTimeConflict(
+          formattedStartTime,
+          calculatedEndTime,
+          existingBookings
+        );
+        if (hasConflict) {
+          alert("⚠️ Khung giờ đã được đặt. Vui lòng chọn giờ khác.");
+          return;
+        }
         const selectedCourt = courtsData.find(
           (court) => court.id === selectedCourtId
         );
@@ -272,6 +290,13 @@ export default function BookingModal({ court }: { court: number }) {
     setIsSuccessModalOpen,
     bookingInfo,
   };
+
+  const { bookings, loading } = useBookings();
+
+// Lọc các booking của sân đang chọn:
+const bookingsForCourt = bookings.filter(
+  (b) => b.courtId === courtsData[court]?.id
+);
 
   return (
     <div className="md:p-4 flex gap-8">
@@ -497,6 +522,19 @@ export default function BookingModal({ court }: { court: number }) {
             />
           </div>
         </div>
+        <p><b>Khung giờ đã được đặt:</b></p>
+{loading ? (
+  <p>Đang tải...</p>
+) : bookingsForCourt.length === 0 ? (
+  <Tag color="green">Chưa có đặt</Tag>
+) : (
+  bookingsForCourt.map((b, index) => (
+    <Tag key={index} color="blue">
+      🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
+    </Tag>
+  ))
+)}
+
       </div>
     </div>
   );
