@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Modal } from "antd";
 import BookingModal from "@/app/user/components/form";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/app/source/firebaseConfig"; // Đổi lại path nếu bạn để firebaseConfig ở nơi khác
+import { db } from "@/app/source/firebaseConfig"; 
 
 export default function BadmintonSchedule() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,7 +37,7 @@ export default function BadmintonSchedule() {
 
   if (!today)
     return <p className="text-center text-gray-500">Đang tải dữ liệu...</p>;
-
+ 
   const weekdays = [
     "Chủ Nhật",
     "Thứ Hai",

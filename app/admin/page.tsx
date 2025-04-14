@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Layout, Menu, Table } from "antd";
+import { Layout, Menu, Table, Statistic, Row, Col } from "antd";
 import {
   DashboardOutlined,
   UserOutlined,
@@ -10,18 +10,19 @@ import {
   MessageOutlined,
 } from "@ant-design/icons";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/app/source/firebaseConfig"; // Cập nhật đúng path đến firebaseConfig.ts
+import { db } from "@/app/source/firebaseConfig"; 
+import moment from "moment";
 
 const { Sider, Content } = Layout;
 
 const AdminPage = () => {
   const [selectedPage, setSelectedPage] = useState("dashboard");
-  const [data, setData] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [revenueData, setRevenueData] = useState<any>({});
 
-  // Fetch data from Firestore when selectedPage is "users"
   useEffect(() => {
     const fetchBookings = async () => {
-      if (selectedPage !== "users") return;
+      if (selectedPage !== "users" && selectedPage !== "revenue") return;
 
       try {
         const q = query(collection(db, "bookings"), orderBy("timestamp", "desc"));
@@ -30,7 +31,7 @@ const AdminPage = () => {
           key: doc.id,
           ...doc.data(),
         }));
-        setData(bookingsData);
+        setBookings(bookingsData);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu bookings:", error);
       }
@@ -38,6 +39,42 @@ const AdminPage = () => {
 
     fetchBookings();
   }, [selectedPage]);
+
+  useEffect(() => {
+    const calculateRevenue = () => {
+      const revenueByDay: any = {};
+      const revenueByWeek: any = {};
+      const revenueByMonth: any = {};
+      const revenueByYear: any = {};
+
+      bookings.forEach((booking: any) => {
+        const totalPrice = booking.totalPrice;
+        const date = moment(booking.date); // Assuming 'date' is stored in a proper date format
+        
+        const dayKey = date.format("YYYY-MM-DD");
+        const weekKey = date.format("YYYY-wo");
+        const monthKey = date.format("YYYY-MM");
+        const yearKey = date.format("YYYY");
+
+        // Grouping total revenue by day, week, month, and year
+        revenueByDay[dayKey] = (revenueByDay[dayKey] || 0) + totalPrice;
+        revenueByWeek[weekKey] = (revenueByWeek[weekKey] || 0) + totalPrice;
+        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + totalPrice;
+        revenueByYear[yearKey] = (revenueByYear[yearKey] || 0) + totalPrice;
+      });
+
+      setRevenueData({
+        revenueByDay,
+        revenueByWeek,
+        revenueByMonth,
+        revenueByYear,
+      });
+    };
+
+    if (bookings.length > 0) {
+      calculateRevenue();
+    }
+  }, [bookings]);
 
   const columns = [
     {
@@ -96,18 +133,51 @@ const AdminPage = () => {
       case "users":
         return (
           <>
-            <h1 className="text-2xl font-bold mb-4">👥 Quản lý sân</h1>
-            <Table columns={columns} dataSource={data} />
+            <h1 className="text-xl font-bold mb-4"> Quản lý sân</h1>
+            <Table columns={columns} dataSource={bookings} />
           </>
         );
-      case "courts":
-        return <h1 className="text-2xl font-bold">🛠️ Quản lý người dùng</h1>;
+      
       case "revenue":
-        return <h1 className="text-2xl font-bold">💰 Doanh thu</h1>;
-      case "reviews":
-        return <h1 className="text-2xl font-bold">⭐ Đánh giá & phản hồi</h1>;
-      default:
-        return <h1>Page not found</h1>;
+        return (
+          <>
+            <h1 className="text-2xl font-bold mb-4">💰 Doanh thu</h1>
+            <Row gutter={16}>
+              <Col span={6}>
+                <Statistic
+                  title="Doanh thu theo ngày"
+                  value={revenueData.revenueByDay ? revenueData.revenueByDay[moment().format("YYYY-MM-DD")] : 0}
+                  prefix="₫"
+                  suffix="VND"
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Doanh thu theo tuần"
+                  value={revenueData.revenueByWeek ? revenueData.revenueByWeek[moment().format("YYYY-wo")] : 0}
+                  prefix="₫"
+                  suffix="VND"
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Doanh thu theo tháng"
+                  value={revenueData.revenueByMonth ? revenueData.revenueByMonth[moment().format("YYYY-MM")] : 0}
+                  prefix="₫"
+                  suffix="VND"
+                />
+              </Col>
+              <Col span={6}>
+                <Statistic
+                  title="Doanh thu theo năm"
+                  value={revenueData.revenueByYear ? revenueData.revenueByYear[moment().format("YYYY")] : 0}
+                  prefix="₫"
+                  suffix="VND"
+                />
+              </Col>
+            </Row>
+          </>
+        );
     }
   };
 
@@ -116,10 +186,17 @@ const AdminPage = () => {
       <div className="h-full w-full flex">
         <div className="w-fit h-full">
           <Sider width={220} className="bg-white h-screen">
-            <div className="text-center py-6 text-xl font-semibold text-black">
-              🎯 Admin Panel
+            <div className="flex flex-col items-center py-6 bg-white">
+              <img
+                src="/images/logo.png"
+                alt="Logo"
+                className="size-full px-8"
+              />
+            
             </div>
+
             <Menu
+              className="custom-menu"
               mode="inline"
               defaultSelectedKeys={["dashboard"]}
               style={{ height: "100%" }}
@@ -136,19 +213,9 @@ const AdminPage = () => {
                   label: "Quản lý sân",
                 },
                 {
-                  key: "courts",
-                  icon: <UserOutlined />,
-                  label: "Người dùng",
-                },
-                {
                   key: "revenue",
                   icon: <BarChartOutlined />,
                   label: "Doanh thu",
-                },
-                {
-                  key: "reviews",
-                  icon: <MessageOutlined />,
-                  label: "Đánh giá",
                 },
               ]}
             />

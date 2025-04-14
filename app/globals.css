@@ -28,3 +28,13 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.custom-menu .ant-menu-item {
+  background-color: white; /* màu nền */
+  color: white; /* màu chữ */
+}
+
+.custom-menu .ant-menu-item-selected {
+  background-color: #deffdf !important;
+  color: #05bd05 !important;
+}
