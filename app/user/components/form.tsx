@@ -528,7 +528,7 @@ const bookingsForCourt = bookings.filter(
 ) : bookingsForCourt.length === 0 ? (
   <Tag color="green">Chưa có đặt</Tag>
 ) : (
-  bookingsForCourt.map((b, index) => (
+  bookingsForCourt.map((b, index) => (  
     <Tag key={index} color="blue">
       🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
     </Tag>

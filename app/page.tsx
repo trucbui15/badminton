@@ -14,8 +14,6 @@ export default function BadmintonSchedule() {
   const [valueEmail, setValueEmail] = useState("");
   const [selectId, setSelectId] = useState(0);
   const [courtsData, setCourtsData] = useState<any[]>([]);
-  const [today, setToday] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(0);
 
   useEffect(() => {
     const fetchCourts = async () => {
@@ -32,34 +30,9 @@ export default function BadmintonSchedule() {
     };
 
     fetchCourts();
-    setToday(new Date());
   }, []);
 
-  if (!today)
-    return <p className="text-center text-gray-500">Đang tải dữ liệu...</p>;
- 
-  const weekdays = [
-    "Chủ Nhật",
-    "Thứ Hai",
-    "Thứ Ba",
-    "Thứ Tư",
-    "Thứ Năm",
-    "Thứ Sáu",
-    "Thứ Bảy",
-  ];
-  const todayIndex = today.getDay();
-
-  const next7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + i);
-    return {
-      day: weekdays[(todayIndex + i) % 7],
-      date: date.toLocaleDateString("vi-VN"),
-    };
-  });
-
   const handleModalClose = () => setIsModalOpen(false);
-  
 
   return (
     <div className="bg-blue-50 min-h-screen p-6 flex flex-col items-center justify-center">
@@ -74,25 +47,6 @@ export default function BadmintonSchedule() {
             Trung tâm giải trí Cầu Lông An Nhơn. Số 8 Trần Phú, Phường Bình
             Định, Tx. An Nhơn
           </p>
-        </div>
-
-        {/* Date Picker */}
-        <div className="flex justify-around border-b border-gray-300 pb-2 mb-4">
-          {next7Days.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedDay(index)}
-              className={`flex flex-col items-center text-blue-400 relative ${
-                selectedDay === index ? "font-bold" : ""
-              }`}
-            >
-              <p className="text-sm">{item.day}</p>
-              <p className="text-xs">{item.date}</p>
-              {selectedDay === index && (
-                <span className="absolute -bottom-2 w-full h-1 bg-blue-700 rounded-full"></span>
-              )}
-            </button>
-          ))}
         </div>
 
         {/* Courts List */}
