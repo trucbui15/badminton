@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Modal } from "antd";
+import { Modal, Select } from "antd";
 import BookingModal from "@/app/user/components/form";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig"; 
+
+
 
 export default function BadmintonSchedule() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,8 +75,9 @@ export default function BadmintonSchedule() {
                   <strong>Loại Sân:</strong> {court.type}
                 </p>
                 <p className="text-sm">
-                  <strong>Giá Sân:</strong> {court.price} VND
+                 <strong>Giá Sân:</strong> {court.price.toLocaleString('vi-VN')} VND
                 </p>
+
                 <p className="text-xs text-gray-400 mt-2">
                   Cầu lông là thứ tồn tại duy nhất, những thứ còn lại có hay
                   không không quan trọng...
