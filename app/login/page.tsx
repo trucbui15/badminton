@@ -37,12 +37,13 @@ const Login = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <Card
-        bordered={false}
-        className="w-full max-w-md"
-        styles={{ body: { padding: '24px' } }}
-      >
+    <div className="flex justify-center items-center min-h-screen bg-center bg-gray-50"
+    style={{ backgroundImage: "url('/images/sancaulong.jpg')" }}
+>
+    <Card
+      variant="borderless"
+      className="w-full max-w-md bg-white shadow-md rounded-xl"
+    >
         {/* HoGo Logo and Title */}
         <div className="flex flex-col items-center py-6 bg-white">
           <img src="/images/logo.png" alt="Logo" className="size-full px-8" />

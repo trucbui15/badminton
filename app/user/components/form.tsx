@@ -11,11 +11,10 @@ import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
 
 const { Title, Text } = Typography;
-// import  from "next/image";
-
-// import { db, collection, getDocs, addDoc, serverTimestamp } from "@/app/source/firebaseConfig";
 
 export default function BookingModal({ court }: { court: number }) {
+  
+
   const [bookingInfo, setBookingInfo] = useState<any>(null); // Lưu thông tin đặt sân
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -235,6 +234,7 @@ export default function BookingModal({ court }: { court: number }) {
           (court) => court.id === selectedCourtId
         );
         const totalPrice = durationInHours * Number(selectedCourt?.price) || 0;
+        
         const bookingData = {
           fullName: formData.fullName,
           phone: formData.phone,
@@ -528,11 +528,23 @@ const bookingsForCourt = bookings.filter(
 ) : bookingsForCourt.length === 0 ? (
   <Tag color="green">Chưa có đặt</Tag>
 ) : (
-  bookingsForCourt.map((b, index) => (  
-    <Tag key={index} color="blue">
+ 
+  <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
+  {bookingsForCourt.map((b, index) => (  
+    <div
+      key={index}
+      style={{
+        width: "fit-content",
+        backgroundColor: "#e6f4ff",
+        borderRadius: "5px",
+        padding: "5px"
+      }}
+    >
       🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
-    </Tag>
-  ))
+    </div>
+  ))}
+</div>
+
 )}
 
       </div>
