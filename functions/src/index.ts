@@ -1,49 +1,46 @@
-import * as functions from "firebase-functions/v1";
-import * as admin from "firebase-admin";
-import * as nodemailer from "nodemailer";
+// const functions = require('firebase-functions');
+// const admin = require('firebase-admin');
+// const nodemailer = require('nodemailer');
 
-admin.initializeApp();
-const db = admin.firestore();
+// admin.initializeApp();
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "bamboo15bmt@gmail.com",
-    pass: "roknrrcxgwandazx", // ✅ Không có khoảng trắng
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: 'your-email@gmail.com',
+//     pass: 'your-email-password',
+//   }
+// });
 
-export const sendBookingReminders = functions.pubsub
-  .schedule("every 60 minutes")
-  .timeZone("Asia/Ho_Chi_Minh")
-  .onRun(async () => {
-    const now = new Date();
-    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+// exports.sendEmailToUsers = functions.https.onRequest(async (req, res) => {
+//   try {
+//     // Lấy dữ liệu người dùng từ Firestore
+//     const usersSnapshot = await admin.firestore().collection('users').get();
+//     const users = usersSnapshot.docs.map(doc => doc.data());
 
-    const snapshot = await db.collection("bookings").get();
-    const jobs: any[] = [];
+//     // Duyệt qua tất cả người dùng và gửi email
+//     users.forEach(user => {
+//       const { name, email } = user;
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const bookingTime = new Date(`${data.date}T${data.time}:00`);
-      if (
-        bookingTime > now &&
-        bookingTime <= oneHourLater &&
-        data.status === "booked"
-      ) {
-        const mailOptions = {
-          from: "bamboo15bmt@gmail.com",
-          to: data.userEmail,
-          subject: "Nhắc hẹn đánh cầu lông",
-          text: `Xin chào ${data.userName}, bạn có lịch đánh cầu lông vào lúc ${data.time} ngày ${data.date} tại sân ${data.courtId}.`,
-        };
-        jobs.push(
-          transporter.sendMail(mailOptions).catch((err) => {
-            console.error("Gửi email thất bại:", err);
-          })
-        );
-      }
-    });
+//       const mailOptions = {
+//         from: 'your-email@gmail.com',
+//         to: email,
+//         subject: 'Chào mừng bạn đến với hệ thống!',
+//         text: `Xin chào ${name},\n\nCảm ơn bạn đã sử dụng dịch vụ của chúng tôi!`
+//       };
 
-    return Promise.all(jobs); // ✅ Nhớ return
-  });
+//       transporter.sendMail(mailOptions, (error, info) => {
+//         if (error) {
+//           console.log(error);
+//         } else {
+//           console.log('Email sent: ' + info.response);
+//         }
+//       });
+//     });
+
+//     res.status(200).send('Emails sent successfully');
+//   } catch (error) {
+//     console.error('Error sending email:', error);
+//     res.status(500).send('Error sending email');
+//   }
+// });

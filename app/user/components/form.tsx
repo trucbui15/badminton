@@ -9,7 +9,7 @@ import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { useRouter } from "next/router";
 import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
-
+import emailjs from 'emailjs-com';
 const { Title, Text } = Typography;
 
 export default function BookingModal({ court }: { court: number }) {
@@ -34,6 +34,8 @@ export default function BookingModal({ court }: { court: number }) {
     totalPrice: 0,
     timestamp: null as any,
   });
+
+
 
   const [error, setError] = useState<{ [key: string]: string }>({});
 
@@ -234,7 +236,7 @@ export default function BookingModal({ court }: { court: number }) {
           (court) => court.id === selectedCourtId
         );
         const totalPrice = durationInHours * Number(selectedCourt?.price) || 0;
-        
+
         const bookingData = {
           fullName: formData.fullName,
           phone: formData.phone,
@@ -249,20 +251,40 @@ export default function BookingModal({ court }: { court: number }) {
           totalPrice: calculatePrice(),
           timestamp: serverTimestamp(),
         };
-
+       
         await addDoc(collection(db, "bookings"), bookingData);
+       // Gửi email xác nhận qua Google Apps Script
+       await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
+        method: "POST",
+        mode: "no-cors", // 👈 thêm dòng này
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          formData: {
+            courtName: bookingData.courtName,
+            date: bookingData.date,
+            startTime: bookingData.startTime,
+            endTime: bookingData.endTime,
+            totalPrice: bookingData.totalPrice,
+          },
+        }),
+      });
+      
 
-        alert("Đặt sân thành công!");
-        setBookingInfo(bookingData);
-        setIsSuccessModalOpen(true);
-      } catch (err) {
-        console.error("Lỗi khi gửi lên Firestore:", err);
-        alert("Đặt sân thất bại! Vui lòng thử lại.");
-      }
-    } else {
-      alert("Vui lòng điền đầy đủ thông tin.");
+      alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
+      setBookingInfo(bookingData);
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      console.error("Lỗi khi đặt sân:", err);
+      alert("Đặt sân thất bại! Vui lòng thử lại.");
     }
-  };
+  } else {
+    alert("Vui lòng điền đầy đủ thông tin.");
+  }
+};
+
 
   const calculatePrice = () => {
     console.log("111");
@@ -285,6 +307,7 @@ export default function BookingModal({ court }: { court: number }) {
     return hours * courtsData[court].price;
   };
 
+
   const BookingSuccessModal = {
     isSuccessModalOpen,
     setIsSuccessModalOpen,
@@ -297,6 +320,7 @@ export default function BookingModal({ court }: { court: number }) {
 const bookingsForCourt = bookings.filter(
   (b) => b.courtId === courtsData[court]?.id
 );
+  
 
   return (
     <div className="md:p-4 flex gap-8">
