@@ -129,8 +129,7 @@ export default function BookingModal({ court }: { court: number }) {
 
   const validateBooking = () => {
     const { fullName, phone, email, date, startTime, duration } = formData;
-    let error: { [key: string]: string } = {}; // Dùng error thay vì errors
-
+    let error: { [key: string]: string } = {}; 
     if (!fullName) {
       error.name = "Vui lòng nhập họ và tên!";
     }

@@ -37,8 +37,9 @@ const Login = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-center bg-gray-50"
-    style={{ backgroundImage: "url('/images/sancaulong.jpg')" }}
+    <div
+  className="flex justify-center items-center w-screen h-screen bg-center bg-cover bg-gray-50"
+  style={{ backgroundImage: "url('/images/nen.jpg')" }}
 >
     <Card
       variant="borderless"
