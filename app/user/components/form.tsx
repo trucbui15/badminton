@@ -227,10 +227,12 @@ export default function BookingModal({ court }: { court: number }) {
           calculatedEndTime,
           existingBookings
         );
+        
         if (hasConflict) {
-          alert("⚠️ Khung giờ đã được đặt. Vui lòng chọn giờ khác.");
+          alert("⚠️ Khung giờ đã được đặt hoặc giao nhau. Vui lòng chọn giờ khác.");
           return;
         }
+        
         const selectedCourt = courtsData.find(
           (court) => court.id === selectedCourtId
         );

@@ -36,7 +36,7 @@ export function SideBar() {
           {
             key: "order",
             icon: <FieldTimeOutlined />,
-            label: "Quản lý sân",
+            label: "Quản lý người dùng",
           },
           {
             key: "revenue",
