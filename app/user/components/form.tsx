@@ -257,21 +257,23 @@ export default function BookingModal({ court }: { court: number }) {
        // Gửi email xác nhận qua Google Apps Script
        await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
         method: "POST",
-        mode: "no-cors", // 👈 thêm dòng này
+        mode: "cors",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          fullName: formData.fullName,   // Đảm bảo truyền đúng fullName
+          phone: formData.phone,  
           email: formData.email,
-          formData: {
-            courtName: bookingData.courtName,
-            date: bookingData.date,
-            startTime: bookingData.startTime,
-            endTime: bookingData.endTime,
-            totalPrice: bookingData.totalPrice,
-          },
+          courtName: bookingData.courtName,
+          date: bookingData.date,
+          startTime: bookingData.startTime,
+          endTime: bookingData.endTime,
+          totalPrice: bookingData.totalPrice,
         }),
       });
+      
+      
       
 
       alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
