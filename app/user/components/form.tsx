@@ -6,10 +6,8 @@ import {Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, But
 import dayjs from "dayjs";
 import { courtsData } from "@/app/data/data";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
-import { useRouter } from "next/router";
 import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
-import emailjs from 'emailjs-com';
 const { Title, Text } = Typography;
 
 export default function BookingModal({ court }: { court: number }) {
@@ -19,8 +17,6 @@ export default function BookingModal({ court }: { court: number }) {
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [selectedCourtId, setSelectedCourtId] = useState(null);
-  const [selectedCourtName, setSelectedCourtName] = useState("");
-  const [selectedCourtPrice, setSelectedCourtPrice] = useState(0);
   const [formData, setFormData] = useState({
     courtId: "",
     courtName: "",
@@ -255,26 +251,21 @@ export default function BookingModal({ court }: { court: number }) {
        
         await addDoc(collection(db, "bookings"), bookingData);
        // Gửi email xác nhận qua Google Apps Script
-       await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: formData.fullName,   // Đảm bảo truyền đúng fullName
-          phone: formData.phone,  
-          email: formData.email,
-          courtName: bookingData.courtName,
-          date: bookingData.date,
-          startTime: bookingData.startTime,
-          endTime: bookingData.endTime,
-          totalPrice: bookingData.totalPrice,
-        }),
-      });
-      
-      
-      
+      //  await fetch("https://script.google.com/macros/s/AKfycbxUDYjWz1lyGd3fvyh_Co7YI80tcaxlbdTo1G2KwoYLyUh8eZENt1iFdClgn2S4UBId3Q/exec", {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   },
+      //   body: JSON.stringify({
+      //     fullName: formData.fullName, // Dùng dữ liệu từ form
+      //     email: formData.email, // Dùng dữ liệu từ form
+      //     courtName: courtsData[court].name, // Dùng tên sân từ courtsData
+      //     date: formattedDate, // Dùng ngày đã format từ form
+      //     startTime: formattedStartTime, // Dùng giờ bắt đầu từ form
+      //     endTime: calculatedEndTime, // Dùng giờ kết thúc từ form
+      //     totalPrice: calculatePrice() // Dùng giá trị tổng tiền đã tính toán
+      //   })
+      // });
 
       alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
       setBookingInfo(bookingData);
