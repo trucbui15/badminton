@@ -250,22 +250,22 @@ export default function BookingModal({ court }: { court: number }) {
         };
        
         await addDoc(collection(db, "bookings"), bookingData);
-       // Gửi email xác nhận qua Google Apps Script
-      //  await fetch("https://script.google.com/macros/s/AKfycbxUDYjWz1lyGd3fvyh_Co7YI80tcaxlbdTo1G2KwoYLyUh8eZENt1iFdClgn2S4UBId3Q/exec", {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json'
-      //   },
-      //   body: JSON.stringify({
-      //     fullName: formData.fullName, // Dùng dữ liệu từ form
-      //     email: formData.email, // Dùng dữ liệu từ form
-      //     courtName: courtsData[court].name, // Dùng tên sân từ courtsData
-      //     date: formattedDate, // Dùng ngày đã format từ form
-      //     startTime: formattedStartTime, // Dùng giờ bắt đầu từ form
-      //     endTime: calculatedEndTime, // Dùng giờ kết thúc từ form
-      //     totalPrice: calculatePrice() // Dùng giá trị tổng tiền đã tính toán
-      //   })
-      // });
+        // Gửi request đến Apps Script để gửi email
+        fetch("https://script.google.com/macros/s/AKfycbxUDYjWz1lyGd3fvyh_Co7YI80tcaxlbdTo1G2KwoYLyUh8eZENt1iFdClgn2S4UBId3Q/exec", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(bookingData),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("Email sent:", data);
+          })
+          .catch((err) => {
+            console.error("Lỗi khi gọi Apps Script:", err);
+          });
+        
 
       alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
       setBookingInfo(bookingData);
@@ -543,27 +543,30 @@ const bookingsForCourt = bookings.filter(
         <p><b>Khung giờ đã được đặt:</b></p>
 {loading ? (
   <p>Đang tải...</p>
-) : bookingsForCourt.length === 0 ? (
-  <Tag color="green">Chưa có đặt</Tag>
-) : (
- 
-  <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
-  {bookingsForCourt.map((b, index) => (  
-    <div
-      key={index}
-      style={{
-        width: "fit-content",
-        backgroundColor: "#e6f4ff",
-        borderRadius: "5px",
-        padding: "5px"
-      }}
-    >
-      🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
-    </div>
-  ))}
-</div>
+) : (() => {
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const todayBookings = bookingsForCourt.filter(b => b.date === today);
 
-)}
+  return todayBookings.length === 0 ? (
+    <Tag color="green">Chưa có đặt</Tag>
+  ) : (
+    <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
+      {todayBookings.map((b, index) => (
+        <div
+          key={index}
+          style={{
+            width: "fit-content",
+            backgroundColor: "#e6f4ff",
+            borderRadius: "5px",
+            padding: "5px"
+          }}
+        >
+          🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
+        </div>
+      ))}
+    </div>
+  );
+})()}
 
       </div>
     </div>

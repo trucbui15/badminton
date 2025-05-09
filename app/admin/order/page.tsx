@@ -1,15 +1,7 @@
 "use client";
 
 import { db } from "@/app/source/firebaseConfig";
-import {
-  Table,
-  Modal,
-  Button,
-  Select,
-  Input,
-  DatePicker,
-  message,
-} from "antd";
+import { Table, Modal, Button, Select, Input, DatePicker, message } from "antd";
 import dayjs from "dayjs";
 import {
   collection,
@@ -225,8 +217,19 @@ export default function Page() {
     <>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">Quản lý sân</h1>
-        <Button type="primary" onClick={() => setIsOpenModal(true)}>
-          Đặt Sân
+        <Button
+          onClick={handleSubmit}
+          type="primary"
+          disabled={
+            !formData.fullName ||
+            !formData.phone ||
+            !formData.date ||
+            !formData.startTime ||
+            !formData.duration ||
+            !formData.courtId
+          }
+        >
+          Xác nhận đặt sân
         </Button>
       </div>
 
@@ -239,88 +242,123 @@ export default function Page() {
         title="Đặt sân"
       >
         {/* Chọn sân */}
-        <div className="mb-4">
-          <label className="block text-gray-700 font-medium mb-1">
-            Chọn sân
-          </label>
-          <Select
-            className="w-full"
-            placeholder="Chọn sân"
-            value={formData.courtId}
-            onChange={(value) => {
-              const selectedCourt = courtsData.find((c) => c.id === value);
-              setFormData({
-                ...formData,
-                courtId: value,
-                courtName: selectedCourt?.name || "",
-              });
-            }}
-            options={courtsData.map((court) => ({
-              label: court.name,
-              value: court.id,
-            }))}
-          />
+        <div className="md:p-4 flex gap-8">
+          {/* Form Đặt Sân (Bên trái) */}
+          <div className="w-1/2 space-y-4">
+            <p className="font-bold text-blue-600">
+              {courtsData.find((court) => court.id === formData.courtId)?.name}
+            </p>
+
+            <div className="space-y-4">
+              {/* Họ và tên */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Họ và Tên
+                </label>
+                <Input
+                  placeholder="Họ và tên"
+                  size="large"
+                  type="text"
+                  value={formData.fullName}
+                  onChange={handleChangeName}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
+                />
+              </div>
+
+              {/* Số điện thoại */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Số Điện Thoại
+                </label>
+                <Input
+                  placeholder="Số điện thoại"
+                  size="large"
+                  className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                  value={formData.phone}
+                  onChange={handleChangePhone}
+                  maxLength={10}
+                  title="Số điện thoại phải có đúng 10 chữ số!"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Email
+                </label>
+                <Input
+                  placeholder="Email"
+                  size="large"
+                  className="border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                  value={formData.email}
+                  onChange={handleChangeEmail}
+                />
+              </div>
+
+              {/* Chọn ngày */}
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  Chọn Ngày
+                </label>
+                <DatePicker
+                  className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                  value={formData.date}
+                  onChange={(date) => handleChange("date", date)}
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày"
+                  disabledDate={(current) =>
+                    current && current.isBefore(dayjs(), "day")
+                  }
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-1/2">
+                  <label className="block text-gray-700 font-semibold mb-1">
+                    Thời Gian Bắt Đầu
+                  </label>
+                  <Select
+                    className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                    placeholder="Chọn giờ bắt đầu"
+                    options={generateTimeSlots()}
+                    value={formData.startTime}
+                    onChange={(value) => handleChange("startTime", value)}
+                  />
+                </div>
+
+                <div className="w-1/2">
+                  <label className="block text-gray-700 font-semibold mb-1">
+                    Thời Gian Kết Thúc
+                  </label>
+                  <Select
+                    className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+                    placeholder="Chọn thời gian chơi"
+                    options={durationOptions}
+                    value={formData.duration}
+                    onChange={(value) => handleChange("duration", value)}
+                  />
+                  {formData.startTime && (
+                    <p className="mt-2 text-gray-700">
+                      Giờ kết thúc: {calculateEndTime()}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center mt-4">
+                <Button
+                  onClick={handleSubmit}
+                  type="primary"
+                  disabled={Object.keys(error).length > 0}
+                >
+                  Đặt sân
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {/* Thông tin người dùng */}
-        <Input
-          className="mb-3"
-          placeholder="Họ và tên"
-          size="large"
-          value={formData.fullName}
-          onChange={handleChangeName}
-          onCompositionStart={() => setIsComposing(true)}
-          onCompositionEnd={() => setIsComposing(false)}
-        />
-        <Input
-          className="mb-3"
-          placeholder="Số điện thoại"
-          size="large"
-          maxLength={10}
-          value={formData.phone}
-          onChange={handleChangePhone}
-        />
-        <Input
-          className="mb-3"
-          placeholder="Email"
-          size="large"
-          value={formData.email}
-          onChange={handleChangeEmail}
-        />
-
-        {/* Ngày */}
-        <DatePicker
-          className="w-full mb-3"
-          value={formData.date}
-          onChange={(date) => handleChange("date", date)}
-          format="DD/MM/YYYY"
-          placeholder="Chọn ngày"
-          disabledDate={(current) => current && current.isBefore(dayjs(), "day")}
-        />
-
-        {/* Thời gian */}
-        <div className="flex gap-4 mb-4">
-          <Select
-            className="w-1/2"
-            placeholder="Giờ bắt đầu"
-            options={generateTimeSlots()}
-            value={formData.startTime}
-            onChange={(value) => handleChange("startTime", value)}
-          />
-          <Select
-            className="w-1/2"
-            placeholder="Số giờ chơi"
-            options={durationOptions}
-            value={formData.duration}
-            onChange={(value) => handleChange("duration", value)}
-          />
-        </div>
-
-        {formData.startTime && formData.duration && (
-          <p className="text-gray-600 mb-2">
-            Giờ kết thúc: {calculateEndTime()}
-          </p>
-        )}
       </Modal>
     </>
   );
