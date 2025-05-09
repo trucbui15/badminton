@@ -247,25 +247,28 @@ export default function BookingModal({ court }: { court: number }) {
           price: courtsData[court].price,
           totalPrice: calculatePrice(),
           timestamp: serverTimestamp(),
+          
         };
        
         await addDoc(collection(db, "bookings"), bookingData);
-        // Gửi request đến Apps Script để gửi email
-        fetch("https://script.google.com/macros/s/AKfycbxUDYjWz1lyGd3fvyh_Co7YI80tcaxlbdTo1G2KwoYLyUh8eZENt1iFdClgn2S4UBId3Q/exec", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        // Gửi email xác nhận qua Google Apps Script
+       await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
+        method: "POST",
+        mode: "no-cors", // 👈 thêm dòng này
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          formData: {
+            courtName: bookingData.courtName,
+            date: bookingData.date,
+            startTime: bookingData.startTime,
+            endTime: bookingData.endTime,
+            totalPrice: bookingData.totalPrice,
           },
-          body: JSON.stringify(bookingData),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            console.log("Email sent:", data);
-          })
-          .catch((err) => {
-            console.error("Lỗi khi gọi Apps Script:", err);
-          });
-        
+        }),
+      });
 
       alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
       setBookingInfo(bookingData);
