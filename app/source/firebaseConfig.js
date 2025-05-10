@@ -1,6 +1,22 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  addDoc, 
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  limit,
+  updateDoc,
+  deleteDoc,
+  doc
+} from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD3KbUHTx32Hl2g6jT1ck3cXgv-g-vphnI",
   authDomain: "badmintoncourts-28a16.firebaseapp.com",
@@ -11,11 +27,27 @@ const firebaseConfig = {
   measurementId: "G-XTYYN2J6QH"
 };
 
+// Initialize Firebase - check if app is already initialized to avoid duplicates
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const db = getFirestore(app);
+const auth = getAuth(app);
+const storage = getStorage(app);
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); 
-
-export { db, collection, getDocs, addDoc, serverTimestamp };
-
-
-
+// Export initialized services and Firestore functions
+export { 
+  app, 
+  db, 
+  auth, 
+  storage,
+  collection, 
+  getDocs, 
+  addDoc, 
+  serverTimestamp,
+  query,
+  where,
+  orderBy,
+  limit,
+  updateDoc,
+  deleteDoc,
+  doc
+};

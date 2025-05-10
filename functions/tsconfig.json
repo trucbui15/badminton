@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "esnext",                      
     "esModuleInterop": true,
-    "moduleResolution": "node",             
+    "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
@@ -10,7 +10,6 @@
     "strict": true,
     "target": "es2020",                      
     "resolveJsonModule": true,
-    "skipLibCheck": true,
     "lib": ["es2020", "dom"],                
     "jsx": "react-jsx"                     
   },

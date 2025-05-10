@@ -41,7 +41,7 @@ export function SideBar() {
           {
             key: "revenue",
             icon: <BarChartOutlined />,
-            label: "Doanh thu",
+            label: "Cập nhật dữ liệu",
           },
         ]}
       />
