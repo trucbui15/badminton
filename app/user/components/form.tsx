@@ -1,22 +1,22 @@
 "use client";
-import { collection, addDoc, serverTimestamp, query, where, getDocs  } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 import { useState, useEffect } from "react";
 import {Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Card, Tag} from "antd";
 import dayjs from "dayjs";
-import { courtsData } from "@/app/data/data";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
 const { Title, Text } = Typography;
 
 export default function BookingModal({ court }: { court: number }) {
-  
-
-  const [bookingInfo, setBookingInfo] = useState<any>(null); // Lưu thông tin đặt sân
+  const [bookingInfo, setBookingInfo] = useState<any>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [selectedCourtId, setSelectedCourtId] = useState(null);
+  const [courtData, setCourtData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
   const [formData, setFormData] = useState({
     courtId: "",
     courtName: "",
@@ -31,9 +31,42 @@ export default function BookingModal({ court }: { court: number }) {
     timestamp: null as any,
   });
 
-
-
   const [error, setError] = useState<{ [key: string]: string }>({});
+
+  // Fetch court data when component mounts
+  useEffect(() => {
+    const fetchCourtData = async () => {
+      try {
+        setLoading(true);
+        // Get the specific court document
+        const courtDoc = await getDocs(query(
+          collection(db, "courts"),
+          where("id", "==", Number(court))
+        ));
+        
+        if (!courtDoc.empty) {
+          const courtData = courtDoc.docs[0].data();
+          setCourtData(courtData);
+          setSelectedCourtId(courtData.id);
+          
+          // Update form data with court info
+          setFormData(prev => ({
+            ...prev,
+            courtId: courtData.id,
+            courtName: courtData.name
+          }));
+        } else {
+          console.error("Court not found");
+        }
+      } catch (err) {
+        console.error("Error fetching court data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourtData();
+  }, [court]);
 
   // Hàm cập nhật formData
   const handleChange = (field: string, value: string | dayjs.Dayjs | null) => {
@@ -42,7 +75,6 @@ export default function BookingModal({ court }: { court: number }) {
 
   const handleChangeName = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isComposing) return; // Đợi gõ xong mới xử lý
-    // const inputValue = e.target.value.replace(/[^a-zA-ZÀ-ỹ\s'’-]/g, "");
     handleChange("fullName", e.target.value);
   };
 
@@ -70,7 +102,6 @@ export default function BookingModal({ court }: { court: number }) {
       });
     }
 
-    console.log("Email nhập vào:", inputValue);
     handleChange("email", inputValue); // Cập nhật email trong formData
   };
 
@@ -204,7 +235,7 @@ export default function BookingModal({ court }: { court: number }) {
         const duration = getDuration(formattedStartTime, calculatedEndTime);
         const q = query(
           collection(db, "bookings"),
-          where("courtId", "==", courtsData[court].id),
+          where("courtId", "==", courtData.id),
           where("date", "==", formattedDate)
         );
         const querySnapshot = await getDocs(q);
@@ -229,10 +260,7 @@ export default function BookingModal({ court }: { court: number }) {
           return;
         }
         
-        const selectedCourt = courtsData.find(
-          (court) => court.id === selectedCourtId
-        );
-        const totalPrice = durationInHours * Number(selectedCourt?.price) || 0;
+        const totalPrice = durationInHours * Number(courtData?.price) || 0;
 
         const bookingData = {
           fullName: formData.fullName,
@@ -242,19 +270,18 @@ export default function BookingModal({ court }: { court: number }) {
           startTime: formattedStartTime,
           endTime: calculatedEndTime,
           duration,
-          courtId: courtsData[court].id,
-          courtName: courtsData[court].name,
-          price: courtsData[court].price,
+          courtId: courtData.id,
+          courtName: courtData.name,
+          price: courtData.price,
           totalPrice: calculatePrice(),
           timestamp: serverTimestamp(),
-          
         };
        
         await addDoc(collection(db, "bookings"), bookingData);
         // Gửi email xác nhận qua Google Apps Script
        await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
         method: "POST",
-        mode: "no-cors", // 👈 thêm dòng này
+        mode: "no-cors",
         headers: {
           "Content-Type": "application/json",
         },
@@ -282,9 +309,9 @@ export default function BookingModal({ court }: { court: number }) {
   }
 };
 
-
   const calculatePrice = () => {
-    console.log("111");
+    if (!courtData) return 0;
+    
     const durationPrices = {
       "30m": 0.5,
       "1h": 1,
@@ -295,15 +322,8 @@ export default function BookingModal({ court }: { court: number }) {
     const hours =
       durationPrices[formData.duration as keyof typeof durationPrices] || 0;
 
-    const selectedCourt = courtsData.find(
-      (court) => court.id === Number(court)
-    );
-
-    const pricePerHour = Number(selectedCourt?.price) || 0;
-
-    return hours * courtsData[court].price;
+    return hours * courtData.price;
   };
-
 
   const BookingSuccessModal = {
     isSuccessModalOpen,
@@ -311,19 +331,26 @@ export default function BookingModal({ court }: { court: number }) {
     bookingInfo,
   };
 
-  const { bookings, loading } = useBookings();
+  const { bookings, loading: bookingsLoading } = useBookings();
 
-// Lọc các booking của sân đang chọn:
-const bookingsForCourt = bookings.filter(
-  (b) => b.courtId === courtsData[court]?.id
-);
+  // Lọc các booking của sân đang chọn:
+  const bookingsForCourt = bookings.filter(
+    (b) => courtData && b.courtId === courtData.id
+  );
   
+  if (loading) {
+    return <div className="flex justify-center items-center p-8">Đang tải thông tin sân...</div>;
+  }
+
+  if (!courtData) {
+    return <div className="text-red-500 p-4">Không tìm thấy thông tin sân</div>;
+  }
 
   return (
     <div className="md:p-4 flex gap-8">
       {/* Form Đặt Sân (Bên trái) */}
       <div className="w-1/2 space-y-4">
-        <p className="font-bold text-blue-600">{courtsData[court].name}</p>
+        <p className="font-bold text-blue-600">{courtData.name}</p>
 
         <div className="space-y-4">
           {/* Họ và tên */}
@@ -523,7 +550,7 @@ const bookingsForCourt = bookings.filter(
         <div className="border md:p-4 p-[4px] rounded-lg flex items-center justify-center">
           <div className="flex flex-col w-1/2 text-[8px] md:text-[14px] md:gap-[10px]">
             <p>
-              <strong>Sân:</strong> {courtsData[court].name}
+              <strong>Sân:</strong> {courtData.name}
             </p>
             <p>
               <strong>Giờ bắt đầu:</strong> {formData.startTime}
@@ -532,45 +559,44 @@ const bookingsForCourt = bookings.filter(
               <strong>Giờ kết thúc:</strong> {calculateEndTime()}
             </p>
             <p>
-              <strong>Tổng tiền:</strong> {calculatePrice()} VND
+              <strong>Tổng tiền:</strong> {calculatePrice().toLocaleString()} VND
             </p>
           </div>
           <div className="w-1/2">
             <Image
-              src={courtsData[court].image}
+              src={courtData.image}
               alt="Sân cầu lông"
               className="md:w-[200px] md:h-[150px] w-[50px] h-[50px]"
             />
           </div>
         </div>
         <p><b>Khung giờ đã được đặt:</b></p>
-{loading ? (
-  <p>Đang tải...</p>
-) : (() => {
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const todayBookings = bookingsForCourt.filter(b => b.date === today);
+        {bookingsLoading ? (
+          <p>Đang tải...</p>
+        ) : (() => {
+          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+          const todayBookings = bookingsForCourt.filter(b => b.date === today);
 
-  return todayBookings.length === 0 ? (
-    <Tag color="green">Chưa có đặt</Tag>
-  ) : (
-    <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
-      {todayBookings.map((b, index) => (
-        <div
-          key={index}
-          style={{
-            width: "fit-content",
-            backgroundColor: "#e6f4ff",
-            borderRadius: "5px",
-            padding: "5px"
-          }}
-        >
-          🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
-        </div>
-      ))}
-    </div>
-  );
-})()}
-
+          return todayBookings.length === 0 ? (
+            <Tag color="green">Chưa có đặt</Tag>
+          ) : (
+            <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
+              {todayBookings.map((b, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: "fit-content",
+                    backgroundColor: "#e6f4ff",
+                    borderRadius: "5px",
+                    padding: "5px"
+                  }}
+                >
+                  🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

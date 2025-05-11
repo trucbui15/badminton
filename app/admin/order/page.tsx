@@ -416,8 +416,9 @@ export default function Page() {
   ];
 
   return (
-    <>
-      <div className="flex items-center justify-between mb-4">
+    // Wrapper để tạo full page scrolling
+    <div className="h-full overflow-auto pb-10" style={{ maxHeight: 'calc(100vh - 64px)' }}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
         <h1 className="text-xl font-bold">Quản lý sân</h1>
         <Button type="primary" onClick={() => setIsOpenModal(true)} className="bg-blue-500 hover:bg-blue-600">
           Đặt Sân
@@ -425,22 +426,22 @@ export default function Page() {
       </div>
 
       {/* Thống kê doanh thu */}
-      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
-            <DollarOutlined className="text-2xl text-green-500 mr-2" />
+            <DollarOutlined className="text-xl sm:text-2xl text-green-500 mr-2" />
             <div>
-              <h3 className="text-lg font-semibold">Tổng doanh thu</h3>
-              <p className="text-2xl font-bold text-green-600">{revenueStats.totalRevenue.toLocaleString()} VND</p>
+              <h3 className="text-base sm:text-lg font-semibold">Tổng doanh thu</h3>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{revenueStats.totalRevenue.toLocaleString()} VND</p>
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
           <div className="flex items-center">
-            <CheckCircleOutlined className="text-2xl text-blue-500 mr-2" />
+            <CheckCircleOutlined className="text-xl sm:text-2xl text-blue-500 mr-2" />
             <div>
-              <h3 className="text-lg font-semibold">Đặt sân đã thanh toán</h3>
-              <p className="text-2xl font-bold text-blue-600">{revenueStats.paidCount} / {bookings.length}</p>
+              <h3 className="text-base sm:text-lg font-semibold">Đặt sân đã thanh toán</h3>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{revenueStats.paidCount} / {bookings.length}</p>
             </div>
           </div>
         </div>
@@ -448,9 +449,9 @@ export default function Page() {
 
       {/* Search Form */}
       <div className="mb-4 bg-white rounded-lg shadow">
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           <Form form={searchForm} layout="vertical" className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <div>
                 <Form.Item label="Tìm theo tên" className="mb-2">
                   <Input 
@@ -512,7 +513,7 @@ export default function Page() {
               </div>
             </div>
             <div className="flex justify-end mt-2">
-              <Space>
+              <Space className="flex-wrap gap-2">
                 <Button icon={<SearchOutlined />} type="primary" onClick={handleSearch} className="bg-blue-500">
                   Tìm kiếm
                 </Button>
@@ -524,93 +525,97 @@ export default function Page() {
       </div>
 
       {/* Bảng với thanh cuộn cải tiến */}
-      <div className="w-full border rounded-lg shadow-sm bg-white">
-        <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-700">
+      <div className="w-full border rounded-lg shadow-sm bg-white overflow-hidden">
+        <div className="p-3 sm:p-4 border-b bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-700">
             {searchCourt ? `Danh sách đặt ${searchCourt}` : 'Tất cả các đặt sân'}
             {searchPaymentStatus === "paid" ? " (Đã thanh toán)" : 
              searchPaymentStatus === "unpaid" ? " (Chưa thanh toán)" : ""}
           </h3>
-          <div className="text-sm text-gray-500">
+          <div className="text-xs sm:text-sm text-gray-500">
             Tổng số: {filteredBookings.length} đặt sân
           </div>
         </div>
-        <Table 
-          columns={columns} 
-          dataSource={filteredBookings}
-          pagination={{ 
-            pageSize: 10, 
-            position: ['bottomCenter'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`
-          }}
-          scroll={{ 
-            x: 'max-content', 
-            y: tableHeight 
-          }}
-          size="middle"
-          className="min-w-full rounded-lg"
-          sticky={true}
-          summary={(pageData) => {
-            let totalAmount = 0;
-            let paidAmount = 0;
-            let unpaidAmount = 0;
-            
-            pageData.forEach((record) => {
-              totalAmount += record.totalPrice || 0;
-              if (record.isPaid) {
-                paidAmount += record.totalPrice || 0;
-              } else {
-                unpaidAmount += record.totalPrice || 0;
-              }
-            });
-            
-            return (
-              <>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
-                    Tổng tiền (trang hiện tại):
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} className="font-semibold text-blue-600">
-                    {totalAmount.toLocaleString()} VND
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-                </Table.Summary.Row>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
-                    <span className="text-green-600">Đã thanh toán:</span>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} className="font-semibold text-green-600">
-                    {paidAmount.toLocaleString()} VND
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-                </Table.Summary.Row>
-                <Table.Summary.Row>
-                  <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
-                    <span className="text-orange-500">Chưa thanh toán:</span>
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1} className="font-semibold text-orange-500">
-                    {unpaidAmount.toLocaleString()} VND
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-                </Table.Summary.Row>
-              </>
-            );
-          }}
-          locale={{
-            emptyText: (
-              <div className="py-8 text-center">
-                <div className="text-gray-500">Không có dữ liệu</div>
-                {(searchCourt || searchPaymentStatus) && (
-                  <div className="mt-2">
-                    <Button type="primary" onClick={resetSearch} className="bg-blue-500">
-                      Xem tất cả đặt sân
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )
-          }}
-        />
+        <div className="overflow-x-auto w-full">
+          <Table 
+            columns={columns} 
+            dataSource={filteredBookings}
+            pagination={{ 
+              pageSize: 10, 
+              position: ['bottomCenter'],
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
+              responsive: true,
+              size: 'small'
+            }}
+            scroll={{ 
+              x: 'max-content', 
+              y: tableHeight 
+            }}
+            size="middle"
+            className="min-w-full rounded-lg"
+            sticky={true}
+            summary={(pageData) => {
+              let totalAmount = 0;
+              let paidAmount = 0;
+              let unpaidAmount = 0;
+              
+              pageData.forEach((record) => {
+                totalAmount += record.totalPrice || 0;
+                if (record.isPaid) {
+                  paidAmount += record.totalPrice || 0;
+                } else {
+                  unpaidAmount += record.totalPrice || 0;
+                }
+              });
+              
+              return (
+                <>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                      Tổng tiền (trang hiện tại):
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} className="font-semibold text-blue-600">
+                      {totalAmount.toLocaleString()} VND
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                      <span className="text-green-600">Đã thanh toán:</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} className="font-semibold text-green-600">
+                      {paidAmount.toLocaleString()} VND
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                  </Table.Summary.Row>
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                      <span className="text-orange-500">Chưa thanh toán:</span>
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} className="font-semibold text-orange-500">
+                      {unpaidAmount.toLocaleString()} VND
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </>
+              );
+            }}
+            locale={{
+              emptyText: (
+                <div className="py-6 sm:py-8 text-center">
+                  <div className="text-gray-500">Không có dữ liệu</div>
+                  {(searchCourt || searchPaymentStatus) && (
+                    <div className="mt-2">
+                      <Button type="primary" onClick={resetSearch} className="bg-blue-500">
+                        Xem tất cả đặt sân
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            }}
+          />
+        </div>
       </div>
 
       <Modal
@@ -620,6 +625,7 @@ export default function Page() {
         title="Đặt sân"
         width={600}
         maskClosable={false}
+        className="w-full max-w-lg sm:max-w-xl md:max-w-2xl"
       >
         <div className="p-2 md:p-4">
           <div className="w-full space-y-3">
@@ -707,7 +713,7 @@ export default function Page() {
                 {error.date && <p className="text-red-500 text-sm">{error.date}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-700 font-semibold mb-1">
                     Thời Gian Bắt Đầu
@@ -747,6 +753,6 @@ export default function Page() {
           </div>
         </div>
       </Modal>
-    </>
+    </div>
   );
 }
