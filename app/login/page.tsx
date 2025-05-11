@@ -39,11 +39,11 @@ const Login = () => {
   return (
     <div
   className="flex justify-center items-center w-screen h-screen bg-center bg-cover bg-gray-50"
-  style={{ backgroundImage: "url('/images/nen.jpg')" }}
+  style={{ backgroundImage: "url('/images/bg123.jpg')" }}
 >
     <Card
       variant="borderless"
-      className="w-full max-w-md bg-white shadow-md rounded-xl"
+      className="w-full max-w-3xl bg-white shadow-md rounded-xl"
     >
         {/* HoGo Logo and Title */}
         <div className="flex flex-col items-center py-6 bg-white">

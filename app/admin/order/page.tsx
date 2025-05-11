@@ -1,7 +1,7 @@
 "use client";
 
 import { db } from "@/app/source/firebaseConfig";
-import { Table, Modal, Button, Select, Input, DatePicker, message, Space, Form } from "antd";
+import { Table, Modal, Button, Select, Input, DatePicker, message, Space, Form, Tag, Popconfirm } from "antd";
 import dayjs from "dayjs";
 import {
   collection,
@@ -10,32 +10,33 @@ import {
   query,
   addDoc,
   serverTimestamp,
+  doc,
+  updateDoc
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, CheckCircleOutlined, DollarOutlined } from "@ant-design/icons";
 
 export default function Page() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
   const [courtsData, setCourtsData] = useState<any[]>([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const [tableHeight, setTableHeight] = useState(500); // Mặc định chiều cao của bảng
+  const [tableHeight, setTableHeight] = useState(500);
+  const [revenueStats, setRevenueStats] = useState({
+    totalRevenue: 0,
+    paidCount: 0
+  });
 
   // Cập nhật chiều cao bảng dựa trên cửa sổ
   useEffect(() => {
     const updateTableHeight = () => {
-      // Tính toán chiều cao bảng dựa vào chiều cao cửa sổ trừ đi khoảng cách cho các phần tử khác
-      const height = window.innerHeight - 300; // Trừ đi header, footer và các phần tử khác
-      setTableHeight(Math.max(400, height)); // Tối thiểu là 400px
+      const height = window.innerHeight - 300;
+      setTableHeight(Math.max(400, height));
     };
 
-    // Gọi lần đầu
     updateTableHeight();
-
-    // Thêm event listener cho resize window
     window.addEventListener('resize', updateTableHeight);
     
-    // Cleanup
     return () => window.removeEventListener('resize', updateTableHeight);
   }, []);
 
@@ -53,6 +54,7 @@ export default function Page() {
     endTime: "",
     totalPrice: 0,
     timestamp: null as any,
+    isPaid: false,
   });
 
   // Search form states
@@ -60,6 +62,7 @@ export default function Page() {
   const [searchName, setSearchName] = useState("");
   const [searchPhone, setSearchPhone] = useState("");
   const [searchCourt, setSearchCourt] = useState("");
+  const [searchPaymentStatus, setSearchPaymentStatus] = useState("");
 
   // Fetch bookings
   useEffect(() => {
@@ -73,11 +76,64 @@ export default function Page() {
       const bookingsData = querySnapshot.docs.map((doc) => ({
         key: doc.id,
         ...doc.data(),
+        isPaid: doc.data().isPaid || false
       }));
       setBookings(bookingsData);
       setFilteredBookings(bookingsData);
+      calculateRevenueStats(bookingsData);
     } catch (error) {
       console.error("Lỗi lấy dữ liệu bookings:", error);
+    }
+  };
+  
+  // Calculate revenue statistics
+  const calculateRevenueStats = (bookingsData) => {
+    const paidBookings = bookingsData.filter(booking => booking.isPaid);
+    const totalRevenue = paidBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
+    
+    setRevenueStats({
+      totalRevenue,
+      paidCount: paidBookings.length
+    });
+  };
+
+  // Handle payment status change
+  const handlePaymentStatus = async (record) => {
+    try {
+      const bookingRef = doc(db, "bookings", record.key);
+      await updateDoc(bookingRef, {
+        isPaid: true,
+        paidAt: serverTimestamp()
+      });
+      
+      message.success(`Đã xác nhận thanh toán cho đặt sân của ${record.fullName}`);
+      
+      // Update local state
+      const updatedBookings = bookings.map(booking => 
+        booking.key === record.key ? { ...booking, isPaid: true } : booking
+      );
+      
+      setBookings(updatedBookings);
+      setFilteredBookings(updatedBookings.filter(booking => {
+        // Apply current filters
+        const nameMatch = searchName ? booking.fullName.toLowerCase().includes(searchName.toLowerCase()) : true;
+        const phoneMatch = searchPhone ? booking.phone.includes(searchPhone) : true;
+        const courtMatch = searchCourt 
+          ? (booking.courtId === searchCourt || 
+            (booking.courtName && booking.courtName.includes(searchCourt)))
+          : true;
+        const paymentMatch = searchPaymentStatus 
+          ? (searchPaymentStatus === "paid" ? booking.isPaid : !booking.isPaid) 
+          : true;
+        
+        return nameMatch && phoneMatch && courtMatch && paymentMatch;
+      }));
+      
+      // Update revenue stats
+      calculateRevenueStats(updatedBookings);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trạng thái thanh toán:", error);
+      message.error("Có lỗi xảy ra khi cập nhật trạng thái thanh toán");
     }
   };
 
@@ -111,7 +167,12 @@ export default function Page() {
           (booking.courtName && booking.courtName.includes(searchCourt)))
         : true;
       
-      return nameMatch && phoneMatch && courtMatch;
+      // Tìm kiếm theo trạng thái thanh toán
+      const paymentMatch = searchPaymentStatus 
+        ? (searchPaymentStatus === "paid" ? booking.isPaid : !booking.isPaid) 
+        : true;
+      
+      return nameMatch && phoneMatch && courtMatch && paymentMatch;
     });
     
     // Hiển thị thông báo kết quả tìm kiếm
@@ -129,6 +190,7 @@ export default function Page() {
     setSearchName("");
     setSearchPhone("");
     setSearchCourt("");
+    setSearchPaymentStatus("");
     setFilteredBookings(bookings);
   };
 
@@ -216,6 +278,7 @@ export default function Page() {
       totalPrice,
       date: formData.date?.format("DD/MM/YYYY"),
       timestamp: serverTimestamp(),
+      isPaid: false, // Default to unpaid
     };
 
     try {
@@ -234,6 +297,7 @@ export default function Page() {
         endTime: "",
         totalPrice: 0,
         timestamp: null,
+        isPaid: false,
       });
       fetchBookings();
     } catch (err) {
@@ -249,7 +313,7 @@ export default function Page() {
       key: "fullName",
       width: 150,
       ellipsis: true,
-      fixed: 'left' as const, // Cố định cột họ tên bên trái
+      fixed: 'left' as const,
     },
     {
       title: "Số điện thoại",
@@ -300,9 +364,55 @@ export default function Page() {
       key: "totalPrice",
       width: 130,
       render: (total: number) => `${total?.toLocaleString()} VND`,
-      fixed: 'right' as const, // Cố định cột tổng tiền bên phải
+    },
+    {
+      title: "Trạng thái",
+      key: "paymentStatus",
+      width: 120,
+      render: (_: any, record: any) => (
+        <Tag color={record.isPaid ? "green" : "orange"} className="text-center px-2 py-1">
+          {record.isPaid ? 
+            <><CheckCircleOutlined /> Đã thanh toán</> : 
+            "Chưa thanh toán"}
+        </Tag>
+      )
+    },
+    {
+      title: "Hành động",
+      key: "action",
+      width: 120,
+      fixed: 'right' as const,
+      render: (_: any, record: any) => (
+        !record.isPaid ? (
+          <Popconfirm
+            title="Xác nhận thanh toán"
+            description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
+            onConfirm={() => handlePaymentStatus(record)}
+            okText="Xác nhận"
+            cancelText="Hủy"
+          >
+            <Button 
+              type="primary" 
+              icon={<DollarOutlined />} 
+              className="bg-green-500 hover:bg-green-600"
+              size="small"
+            >
+              Thanh toán
+            </Button>
+          </Popconfirm>
+        ) : (
+          <Button 
+            type="default" 
+            size="small" 
+            disabled 
+            className="text-green-500"
+            icon={<CheckCircleOutlined />}
+          >
+            Đã thanh toán
+          </Button>
+        )
+      ),
     }
-   
   ];
 
   return (
@@ -314,11 +424,33 @@ export default function Page() {
         </Button>
       </div>
 
+      {/* Thống kê doanh thu */}
+      <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <DollarOutlined className="text-2xl text-green-500 mr-2" />
+            <div>
+              <h3 className="text-lg font-semibold">Tổng doanh thu</h3>
+              <p className="text-2xl font-bold text-green-600">{revenueStats.totalRevenue.toLocaleString()} VND</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center">
+            <CheckCircleOutlined className="text-2xl text-blue-500 mr-2" />
+            <div>
+              <h3 className="text-lg font-semibold">Đặt sân đã thanh toán</h3>
+              <p className="text-2xl font-bold text-blue-600">{revenueStats.paidCount} / {bookings.length}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Search Form */}
       <div className="mb-4 bg-white rounded-lg shadow">
         <div className="p-4">
           <Form form={searchForm} layout="vertical" className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <Form.Item label="Tìm theo tên" className="mb-2">
                   <Input 
@@ -356,9 +488,24 @@ export default function Page() {
                       { label: "Sân 5", value: "Sân 5" },
                       ...(courtsData.map(court => ({
                         label: court.name,
-                        value: court.name // Sử dụng tên sân thay vì ID
+                        value: court.name
                       })))
-                    ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i)} // Loại bỏ các giá trị trùng lặp
+                    ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i)}
+                    className="w-full"
+                  />
+                </Form.Item>
+              </div>
+              <div>
+                <Form.Item label="Trạng thái thanh toán" className="mb-2">
+                  <Select
+                    placeholder="Trạng thái thanh toán"
+                    value={searchPaymentStatus}
+                    onChange={(value) => setSearchPaymentStatus(value)}
+                    allowClear
+                    options={[
+                      { label: "Đã thanh toán", value: "paid" },
+                      { label: "Chưa thanh toán", value: "unpaid" }
+                    ]}
                     className="w-full"
                   />
                 </Form.Item>
@@ -381,6 +528,8 @@ export default function Page() {
         <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
           <h3 className="text-base font-semibold text-gray-700">
             {searchCourt ? `Danh sách đặt ${searchCourt}` : 'Tất cả các đặt sân'}
+            {searchPaymentStatus === "paid" ? " (Đã thanh toán)" : 
+             searchPaymentStatus === "unpaid" ? " (Chưa thanh toán)" : ""}
           </h3>
           <div className="text-sm text-gray-500">
             Tổng số: {filteredBookings.length} đặt sân
@@ -403,9 +552,18 @@ export default function Page() {
           sticky={true}
           summary={(pageData) => {
             let totalAmount = 0;
-            pageData.forEach(({ totalPrice }) => {
-              totalAmount += totalPrice || 0;
+            let paidAmount = 0;
+            let unpaidAmount = 0;
+            
+            pageData.forEach((record) => {
+              totalAmount += record.totalPrice || 0;
+              if (record.isPaid) {
+                paidAmount += record.totalPrice || 0;
+              } else {
+                unpaidAmount += record.totalPrice || 0;
+              }
             });
+            
             return (
               <>
                 <Table.Summary.Row>
@@ -415,6 +573,25 @@ export default function Page() {
                   <Table.Summary.Cell index={1} className="font-semibold text-blue-600">
                     {totalAmount.toLocaleString()} VND
                   </Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                    <span className="text-green-600">Đã thanh toán:</span>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} className="font-semibold text-green-600">
+                    {paidAmount.toLocaleString()} VND
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                </Table.Summary.Row>
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                    <span className="text-orange-500">Chưa thanh toán:</span>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} className="font-semibold text-orange-500">
+                    {unpaidAmount.toLocaleString()} VND
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
                 </Table.Summary.Row>
               </>
             );
@@ -423,7 +600,7 @@ export default function Page() {
             emptyText: (
               <div className="py-8 text-center">
                 <div className="text-gray-500">Không có dữ liệu</div>
-                {searchCourt && (
+                {(searchCourt || searchPaymentStatus) && (
                   <div className="mt-2">
                     <Button type="primary" onClick={resetSearch} className="bg-blue-500">
                       Xem tất cả đặt sân
