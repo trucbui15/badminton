@@ -4,34 +4,53 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 import Link from "next/link";
+import Image from "next/image";
 
-const Login = () => {
+const Register = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
+
     try {
+      // Kiểm tra xem email đã tồn tại chưa
       const q = query(
         collection(db, "admins"),
-        where("email", "==", values.email),
-        where("password", "==", values.password)
+        where("email", "==", values.email)
       );
-
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        console.log("Đăng nhập thành công");
-        router.push("/admin/dashboard");
-      } else {
-        alert("Sai email hoặc mật khẩu!");
+        alert("Email đã được sử dụng!");
+        setLoading(false);
+        return;
       }
+
+      const adminsSnapshot = await getDocs(collection(db, "admins"));
+      const newId = `admin${adminsSnapshot.size + 1}`; // ví dụ: admin1, admin2, ...
+
+      await setDoc(doc(db, "admins", newId), {
+        email: values.email,
+        password: values.password,
+        createdAt: new Date(),
+      });
+
+      alert("Đăng ký thành công! Vui lòng đăng nhập.");
+      router.push("/login");
     } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
-      alert("Đã xảy ra lỗi khi đăng nhập!");
+      console.error("Lỗi khi đăng ký:", error);
+      alert("Đã xảy ra lỗi khi đăng ký.");
     } finally {
       setLoading(false);
     }
@@ -46,36 +65,39 @@ const Login = () => {
         variant="borderless"
         className="w-full max-w-3xl bg-white shadow-md rounded-xl"
       >
-        {/* HoGo Logo and Title */}
         <div className="flex flex-col items-center py-6 bg-white">
-          <img src="/images/logo.png" alt="Logo" className="size-full px-8" />
+          <Image
+            src="/images/logo.png"
+            alt="Logo"
+            width={800}
+            height={400}
+            className="px-8 object-contain"
+            priority
+          />
+          <h2 className="text-xl font-bold mt-2">Đăng ký tài khoản Admin</h2>
         </div>
 
-        <Form
-          name="login"
-          layout="vertical"
-          initialValues={{ remember: true }}
-          onFinish={onFinish}
-          autoComplete="off"
-        >
+        <Form layout="vertical" onFinish={onFinish}>
           <Form.Item
             name="email"
+            label="Email"
             rules={[{ required: true, message: "Vui lòng nhập email!" }]}
           >
             <Input
-              prefix={<UserOutlined className="text-gray-400" />}
-              placeholder="Nhập email của bạn"
+              prefix={<UserOutlined />}
+              placeholder="Nhập email"
               size="large"
             />
           </Form.Item>
 
           <Form.Item
             name="password"
+            label="Mật khẩu"
             rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
           >
             <Input.Password
-              prefix={<LockOutlined className="text-gray-400" />}
-              placeholder="Nhập mật khẩu của bạn"
+              prefix={<LockOutlined />}
+              placeholder="Nhập mật khẩu"
               size="large"
             />
           </Form.Item>
@@ -86,27 +108,23 @@ const Login = () => {
               htmlType="submit"
               loading={loading}
               block
+              className="bg-blue-600 hover:bg-blue-700 uppercase font-bold"
               size="large"
-              className="bg-orange-500 hover:bg-orange-600 border-orange-500 uppercase font-bold"
             >
-              LOGIN
+              ĐĂNG KÝ
             </Button>
           </Form.Item>
 
-          <div className="flex justify-between text-sm text-gray-500 mb-4">
-  <a href="#" className="hover:text-gray-700">
-    Quên mật khẩu?
-  </a>
-  <Link href="/login/register">
-    <a className="hover:text-gray-700">
-      Đăng ký tài khoản
-    </a>
-  </Link>
-</div>
+          <div className="text-center text-sm text-gray-600">
+            Đã có tài khoản?{" "}
+            <Link href="/login" className="text-blue-500 hover:underline">
+              Đăng nhập
+            </Link>
+          </div>
         </Form>
       </Card>
     </div>
   );
 };
 
-export default Login;
+export default Register;

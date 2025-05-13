@@ -1,23 +1,24 @@
 "use client";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import {collection, addDoc, serverTimestamp, query, where, getDocs,
+} from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 import { useState, useEffect } from "react";
-import {Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Card, Tag} from "antd";
+import {Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Tag,} from "antd";
 import dayjs from "dayjs";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
-const { Title, Text } = Typography;
-
+import { FormDataType } from "@/app/type";
 export default function BookingModal({ court }: { court: number }) {
   const [bookingInfo, setBookingInfo] = useState<any>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [selectedCourtId, setSelectedCourtId] = useState(null);
+  const [, setSelectedCourtId] = useState<string | null>(null);
   const [courtData, setCourtData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { Title, Text } = Typography;
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     courtId: "",
     courtName: "",
     fullName: "",
@@ -28,7 +29,7 @@ export default function BookingModal({ court }: { court: number }) {
     duration: "",
     endTime: "",
     totalPrice: 0,
-    timestamp: null as any,
+  
   });
 
   const [error, setError] = useState<{ [key: string]: string }>({});
@@ -39,21 +40,20 @@ export default function BookingModal({ court }: { court: number }) {
       try {
         setLoading(true);
         // Get the specific court document
-        const courtDoc = await getDocs(query(
-          collection(db, "courts"),
-          where("id", "==", Number(court))
-        ));
-        
+        const courtDoc = await getDocs(
+          query(collection(db, "courts"), where("id", "==", Number(court)))
+        );
+
         if (!courtDoc.empty) {
           const courtData = courtDoc.docs[0].data();
           setCourtData(courtData);
           setSelectedCourtId(courtData.id);
-          
+
           // Update form data with court info
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             courtId: courtData.id,
-            courtName: courtData.name
+            courtName: courtData.name,
           }));
         } else {
           console.error("Court not found");
@@ -155,47 +155,65 @@ export default function BookingModal({ court }: { court: number }) {
   };
 
   const validateBooking = () => {
-    const { fullName, phone, email, date, startTime, duration } = formData;
-    let error: { [key: string]: string } = {}; 
-    if (!fullName) {
-      error.name = "Vui lòng nhập họ và tên!";
+  const { fullName, phone, email, date, startTime, duration } = formData;
+  const error: { [key: string]: string } = {};
+
+  // Hàm kiểm tra định dạng số điện thoại
+  const validatePhone = (phone: string) => /^\d{10}$/.test(phone);
+  
+  // Hàm kiểm tra định dạng email
+  const validateEmail = (email: string) => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.trim());
+
+  // Hàm kiểm tra thời gian kết thúc
+  const validateEndTime = (startTime: string, duration: string) => {
+    const baseTime = dayjs(startTime, "HH:mm");
+    const addMinutes = { "30m": 30, "1h": 60, "2h": 120, "3h": 180 }[duration] || 60;
+    const endTime = baseTime.add(addMinutes, "minute");
+    const limitTime = dayjs("22:00", "HH:mm");
+
+    if (endTime.isAfter(limitTime)) {
+      return "Thời gian kết thúc không được sau 22:00!";
     }
-
-    if (!phone) {
-      error.phone = "Vui lòng nhập số điện thoại!";
-    } else if (!/^\d{10}$/.test(phone)) {
-      error.phone = "Số điện thoại phải là 10 chữ số!";
-    }
-
-    if (!email) {
-      error.email = "Vui lòng nhập email!";
-    } else {
-      const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailPattern.test(email.trim())) {
-        error.email = "Vui lòng nhập đúng định dạng email!";
-      }
-    }
-
-    if (!date) {
-      error.date = "Vui lòng chọn ngày!";
-    }
-
-    if (!startTime) {
-      error.startTime = "Vui lòng chọn giờ bắt đầu!";
-    } else {
-      const baseTime = dayjs(startTime, "HH:mm");
-      let addMinutes =
-        { "30m": 30, "1h": 60, "2h": 120, "3h": 180 }[duration] || 60;
-      const endTime = baseTime.add(addMinutes, "minute");
-      const limitTime = dayjs("22:00", "HH:mm");
-
-      if (endTime.isAfter(limitTime)) {
-        error.endTime = "Thời gian kết thúc không được sau 22:00!";
-      }
-    }
-
-    return error;
+    return null;
   };
+
+  // Kiểm tra họ và tên
+  if (!fullName) {
+    error.name = "Vui lòng nhập họ và tên!";
+  }
+
+  // Kiểm tra số điện thoại
+  if (!phone) {
+    error.phone = "Vui lòng nhập số điện thoại!";
+  } else if (!validatePhone(phone)) {
+    error.phone = "Số điện thoại phải là 10 chữ số!";
+  }
+
+  // Kiểm tra email
+  if (!email) {
+    error.email = "Vui lòng nhập email!";
+  } else if (!validateEmail(email)) {
+    error.email = "Vui lòng nhập đúng định dạng email!";
+  }
+
+  // Kiểm tra ngày
+  if (!date) {
+    error.date = "Vui lòng chọn ngày!";
+  }
+
+  // Kiểm tra giờ bắt đầu và thời gian kết thúc
+  if (!startTime) {
+    error.startTime = "Vui lòng chọn giờ bắt đầu!";
+  } else {
+    const endTimeError = validateEndTime(startTime, duration);
+    if (endTimeError) {
+      error.endTime = endTimeError;
+    }
+  }
+
+  return error;
+};
+
 
   const handleSubmit = async () => {
     const error = validateBooking();
@@ -240,7 +258,7 @@ export default function BookingModal({ court }: { court: number }) {
         );
         const querySnapshot = await getDocs(q);
         const existingBookings: Booking[] = [];
-  
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           existingBookings.push({
@@ -248,19 +266,21 @@ export default function BookingModal({ court }: { court: number }) {
             endTime: data.endTime,
           });
         });
-  
+
         const hasConflict = isTimeConflict(
           formattedStartTime,
           calculatedEndTime,
           existingBookings
         );
-        
+
         if (hasConflict) {
-          alert("⚠️ Khung giờ đã được đặt hoặc giao nhau. Vui lòng chọn giờ khác.");
+          alert(
+            "⚠️ Khung giờ đã được đặt hoặc giao nhau. Vui lòng chọn giờ khác."
+          );
           return;
         }
-        
-        const totalPrice = durationInHours * Number(courtData?.price) || 0;
+
+        // const totalPrice = durationInHours * Number(courtData?.price) || 0;
 
         const bookingData = {
           fullName: formData.fullName,
@@ -276,42 +296,47 @@ export default function BookingModal({ court }: { court: number }) {
           totalPrice: calculatePrice(),
           timestamp: serverTimestamp(),
         };
-       
-        await addDoc(collection(db, "bookings"), bookingData);
-        // Gửi email xác nhận qua Google Apps Script
-       await fetch("https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec", {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          formData: {
-            courtName: bookingData.courtName,
-            date: bookingData.date,
-            startTime: bookingData.startTime,
-            endTime: bookingData.endTime,
-            totalPrice: bookingData.totalPrice,
-          },
-        }),
-      });
 
-      alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
-      setBookingInfo(bookingData);
-      setIsSuccessModalOpen(true);
-    } catch (err) {
-      console.error("Lỗi khi đặt sân:", err);
-      alert("Đặt sân thất bại! Vui lòng thử lại.");
+        await addDoc(collection(db, "bookings"), bookingData);
+
+
+        // Gửi email xác nhận qua Google Apps Script
+        await fetch(
+          "https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec",
+          {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              formData: {
+                courtName: bookingData.courtName,
+                date: bookingData.date,
+                startTime: bookingData.startTime,
+                endTime: bookingData.endTime,
+                totalPrice: bookingData.totalPrice,
+              },
+            }),
+          }
+        );
+
+        alert("🎉 Đặt sân thành công và email xác nhận đã được gửi!");
+        setBookingInfo(bookingData);
+        setIsSuccessModalOpen(true);
+      } catch (err) {
+        console.error("Lỗi khi đặt sân:", err);
+        alert("Đặt sân thất bại! Vui lòng thử lại.");
+      }
+    } else {
+      alert("Vui lòng điền đầy đủ thông tin.");
     }
-  } else {
-    alert("Vui lòng điền đầy đủ thông tin.");
-  }
-};
+  };
 
   const calculatePrice = () => {
     if (!courtData) return 0;
-    
+
     const durationPrices = {
       "30m": 0.5,
       "1h": 1,
@@ -325,11 +350,11 @@ export default function BookingModal({ court }: { court: number }) {
     return hours * courtData.price;
   };
 
-  const BookingSuccessModal = {
-    isSuccessModalOpen,
-    setIsSuccessModalOpen,
-    bookingInfo,
-  };
+  // const BookingSuccessModal = {
+  //   isSuccessModalOpen,
+  //   setIsSuccessModalOpen,
+  //   bookingInfo,
+  // };
 
   const { bookings, loading: bookingsLoading } = useBookings();
 
@@ -337,9 +362,13 @@ export default function BookingModal({ court }: { court: number }) {
   const bookingsForCourt = bookings.filter(
     (b) => courtData && b.courtId === courtData.id
   );
-  
+
   if (loading) {
-    return <div className="flex justify-center items-center p-8">Đang tải thông tin sân...</div>;
+    return (
+      <div className="flex justify-center items-center p-8">
+        Đang tải thông tin sân...
+      </div>
+    );
   }
 
   if (!courtData) {
@@ -559,7 +588,8 @@ export default function BookingModal({ court }: { court: number }) {
               <strong>Giờ kết thúc:</strong> {calculateEndTime()}
             </p>
             <p>
-              <strong>Tổng tiền:</strong> {calculatePrice().toLocaleString()} VND
+              <strong>Tổng tiền:</strong> {calculatePrice().toLocaleString()}{" "}
+              VND
             </p>
           </div>
           <div className="w-1/2">
@@ -570,33 +600,39 @@ export default function BookingModal({ court }: { court: number }) {
             />
           </div>
         </div>
-        <p><b>Khung giờ đã được đặt:</b></p>
+        <p>
+          <b>Khung giờ đã được đặt:</b>
+        </p>
         {bookingsLoading ? (
           <p>Đang tải...</p>
-        ) : (() => {
-          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-          const todayBookings = bookingsForCourt.filter(b => b.date === today);
+        ) : (
+          (() => {
+            const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+            const todayBookings = bookingsForCourt.filter(
+              (b) => b.date === today
+            );
 
-          return todayBookings.length === 0 ? (
-            <Tag color="green">Chưa có đặt</Tag>
-          ) : (
-            <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
-              {todayBookings.map((b, index) => (
-                <div
-                  key={index}
-                  style={{
-                    width: "fit-content",
-                    backgroundColor: "#e6f4ff",
-                    borderRadius: "5px",
-                    padding: "5px"
-                  }}
-                >
-                  🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
-                </div>
-              ))}
-            </div>
-          );
-        })()}
+            return todayBookings.length === 0 ? (
+              <Tag color="green">Chưa có đặt</Tag>
+            ) : (
+              <div className="md:grid md:grid-cols-2 flex flex-col gap-2">
+                {todayBookings.map((b, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      width: "fit-content",
+                      backgroundColor: "#e6f4ff",
+                      borderRadius: "5px",
+                      padding: "5px",
+                    }}
+                  >
+                    🗓 {b.date} | ⏰ {b.startTime} - {b.endTime}
+                  </div>
+                ))}
+              </div>
+            );
+          })()
+        )}
       </div>
     </div>
   );
