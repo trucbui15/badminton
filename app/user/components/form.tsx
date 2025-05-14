@@ -8,17 +8,19 @@ import dayjs from "dayjs";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { useBookings } from "@/app/hooks/useBookings";
 import { isTimeConflict, Booking } from "@/app/source/timeprocessing";
-import { FormDataType } from "@/app/type";
+import { useRealtimeBookings } from "@/app/hooks/useRealtimeBookings";
+
 export default function BookingModal({ court }: { court: number }) {
   const [bookingInfo, setBookingInfo] = useState<any>(null);
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [, setSelectedCourtId] = useState<string | null>(null);
   const [courtData, setCourtData] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
   const { Title, Text } = Typography;
-  
-  const [formData, setFormData] = useState<FormDataType>({
+
+  const [formData, setFormData] = useState({
     courtId: "",
     courtName: "",
     fullName: "",
@@ -31,15 +33,15 @@ export default function BookingModal({ court }: { court: number }) {
     totalPrice: 0,
   
   });
-
+  
   const [error, setError] = useState<{ [key: string]: string }>({});
 
-  // Fetch court data when component mounts
+
   useEffect(() => {
     const fetchCourtData = async () => {
       try {
         setLoading(true);
-        // Get the specific court document
+        
         const courtDoc = await getDocs(
           query(collection(db, "courts"), where("id", "==", Number(court)))
         );
@@ -49,17 +51,16 @@ export default function BookingModal({ court }: { court: number }) {
           setCourtData(courtData);
           setSelectedCourtId(courtData.id);
 
-          // Update form data with court info
           setFormData((prev) => ({
             ...prev,
             courtId: courtData.id,
             courtName: courtData.name,
           }));
         } else {
-          console.error("Court not found");
+          console.error("Không tìm thấy thông tin sân");
         }
       } catch (err) {
-        console.error("Error fetching court data:", err);
+        console.error("Lỗi khi tải dữ liệu sân:", err);
       } finally {
         setLoading(false);
       }
@@ -251,6 +252,7 @@ export default function BookingModal({ court }: { court: number }) {
         };
 
         const duration = getDuration(formattedStartTime, calculatedEndTime);
+       
         const q = query(
           collection(db, "bookings"),
           where("courtId", "==", courtData.id),

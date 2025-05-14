@@ -1,7 +1,19 @@
 "use client";
 
 import { db } from "@/app/source/firebaseConfig";
-import { Table, Modal, Button, Select, Input, DatePicker, message, Space, Form, Tag, Popconfirm } from "antd";
+import {
+  Table,
+  Modal,
+  Button,
+  Select,
+  Input,
+  DatePicker,
+  message,
+  Space,
+  Form,
+  Tag,
+  Popconfirm,
+} from "antd";
 import dayjs from "dayjs";
 import {
   collection,
@@ -11,10 +23,16 @@ import {
   addDoc,
   serverTimestamp,
   doc,
-  updateDoc
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { SearchOutlined, CheckCircleOutlined, DollarOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  CheckCircleOutlined,
+  DollarOutlined,
+  DeleteOutlined  
+} from "@ant-design/icons";
 
 export default function Page() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -24,7 +42,7 @@ export default function Page() {
   const [tableHeight, setTableHeight] = useState(500);
   const [revenueStats, setRevenueStats] = useState({
     totalRevenue: 0,
-    paidCount: 0
+    paidCount: 0,
   });
 
   // Cập nhật chiều cao bảng dựa trên cửa sổ
@@ -35,9 +53,9 @@ export default function Page() {
     };
 
     updateTableHeight();
-    window.addEventListener('resize', updateTableHeight);
-    
-    return () => window.removeEventListener('resize', updateTableHeight);
+    window.addEventListener("resize", updateTableHeight);
+
+    return () => window.removeEventListener("resize", updateTableHeight);
   }, []);
 
   const [isComposing, setIsComposing] = useState(false);
@@ -76,7 +94,7 @@ export default function Page() {
       const bookingsData = querySnapshot.docs.map((doc) => ({
         key: doc.id,
         ...doc.data(),
-        isPaid: doc.data().isPaid || false
+        isPaid: doc.data().isPaid || false,
       }));
       setBookings(bookingsData);
       setFilteredBookings(bookingsData);
@@ -85,15 +103,18 @@ export default function Page() {
       console.error("Lỗi lấy dữ liệu bookings:", error);
     }
   };
-  
+
   // Calculate revenue statistics
   const calculateRevenueStats = (bookingsData) => {
-    const paidBookings = bookingsData.filter(booking => booking.isPaid);
-    const totalRevenue = paidBookings.reduce((sum, booking) => sum + (booking.totalPrice || 0), 0);
-    
+    const paidBookings = bookingsData.filter((booking) => booking.isPaid);
+    const totalRevenue = paidBookings.reduce(
+      (sum, booking) => sum + (booking.totalPrice || 0),
+      0
+    );
+
     setRevenueStats({
       totalRevenue,
-      paidCount: paidBookings.length
+      paidCount: paidBookings.length,
     });
   };
 
@@ -103,32 +124,42 @@ export default function Page() {
       const bookingRef = doc(db, "bookings", record.key);
       await updateDoc(bookingRef, {
         isPaid: true,
-        paidAt: serverTimestamp()
+        paidAt: serverTimestamp(),
       });
-      
-      message.success(`Đã xác nhận thanh toán cho đặt sân của ${record.fullName}`);
-      
+
+      message.success(
+        `Đã xác nhận thanh toán cho đặt sân của ${record.fullName}`
+      );
+
       // Update local state
-      const updatedBookings = bookings.map(booking => 
+      const updatedBookings = bookings.map((booking) =>
         booking.key === record.key ? { ...booking, isPaid: true } : booking
       );
-      
+
       setBookings(updatedBookings);
-      setFilteredBookings(updatedBookings.filter(booking => {
-        // Apply current filters
-        const nameMatch = searchName ? booking.fullName.toLowerCase().includes(searchName.toLowerCase()) : true;
-        const phoneMatch = searchPhone ? booking.phone.includes(searchPhone) : true;
-        const courtMatch = searchCourt 
-          ? (booking.courtId === searchCourt || 
-            (booking.courtName && booking.courtName.includes(searchCourt)))
-          : true;
-        const paymentMatch = searchPaymentStatus 
-          ? (searchPaymentStatus === "paid" ? booking.isPaid : !booking.isPaid) 
-          : true;
-        
-        return nameMatch && phoneMatch && courtMatch && paymentMatch;
-      }));
-      
+      setFilteredBookings(
+        updatedBookings.filter((booking) => {
+          // Apply current filters
+          const nameMatch = searchName
+            ? booking.fullName.toLowerCase().includes(searchName.toLowerCase())
+            : true;
+          const phoneMatch = searchPhone
+            ? booking.phone.includes(searchPhone)
+            : true;
+          const courtMatch = searchCourt
+            ? booking.courtId === searchCourt ||
+              (booking.courtName && booking.courtName.includes(searchCourt))
+            : true;
+          const paymentMatch = searchPaymentStatus
+            ? searchPaymentStatus === "paid"
+              ? booking.isPaid
+              : !booking.isPaid
+            : true;
+
+          return nameMatch && phoneMatch && courtMatch && paymentMatch;
+        })
+      );
+
       // Update revenue stats
       calculateRevenueStats(updatedBookings);
     } catch (error) {
@@ -157,31 +188,37 @@ export default function Page() {
 
   // Handle search
   const handleSearch = () => {
-    const filtered = bookings.filter(booking => {
-      const nameMatch = searchName ? booking.fullName.toLowerCase().includes(searchName.toLowerCase()) : true;
-      const phoneMatch = searchPhone ? booking.phone.includes(searchPhone) : true;
-      
+    const filtered = bookings.filter((booking) => {
+      const nameMatch = searchName
+        ? booking.fullName.toLowerCase().includes(searchName.toLowerCase())
+        : true;
+      const phoneMatch = searchPhone
+        ? booking.phone.includes(searchPhone)
+        : true;
+
       // Tìm kiếm theo courtId hoặc courtName (nếu có)
-      const courtMatch = searchCourt 
-        ? (booking.courtId === searchCourt || 
-          (booking.courtName && booking.courtName.includes(searchCourt)))
+      const courtMatch = searchCourt
+        ? booking.courtId === searchCourt ||
+          (booking.courtName && booking.courtName.includes(searchCourt))
         : true;
-      
+
       // Tìm kiếm theo trạng thái thanh toán
-      const paymentMatch = searchPaymentStatus 
-        ? (searchPaymentStatus === "paid" ? booking.isPaid : !booking.isPaid) 
+      const paymentMatch = searchPaymentStatus
+        ? searchPaymentStatus === "paid"
+          ? booking.isPaid
+          : !booking.isPaid
         : true;
-      
+
       return nameMatch && phoneMatch && courtMatch && paymentMatch;
     });
-    
+
     // Hiển thị thông báo kết quả tìm kiếm
     if (filtered.length === 0) {
-      message.info('Không tìm thấy kết quả nào phù hợp');
+      message.info("Không tìm thấy kết quả nào phù hợp");
     } else {
       message.success(`Tìm thấy ${filtered.length} kết quả`);
     }
-    
+
     setFilteredBookings(filtered);
   };
 
@@ -241,7 +278,7 @@ export default function Page() {
   };
 
   const handleCourtChange = (courtId: string) => {
-    const selectedCourt = courtsData.find(court => court.id === courtId);
+    const selectedCourt = courtsData.find((court) => court.id === courtId);
     setFormData({
       ...formData,
       courtId,
@@ -306,6 +343,31 @@ export default function Page() {
     }
   };
 
+  
+const handleDelete = async (record) => {
+  try {
+    console.log("Xóa đơn đặt sân với ID:", record.key);
+
+    // Sử dụng cú pháp mới nhất quán với phần còn lại của code
+    const docRef = doc(db, "bookings", record.key);
+    
+    await deleteDoc(docRef);
+    
+    message.success("Đã xóa đơn đặt sân thành công!");
+    
+    // Cập nhật state sau khi xóa
+    const updatedBookings = bookings.filter(booking => booking.key !== record.key);
+    setBookings(updatedBookings);
+    setFilteredBookings(filteredBookings.filter(booking => booking.key !== record.key));
+    
+    // Cập nhật thống kê
+    calculateRevenueStats(updatedBookings);
+  } catch (error) {
+    console.error("Lỗi khi xóa dữ liệu:", error);
+    message.error("Có lỗi xảy ra khi xóa dữ liệu!");
+  }
+};
+
   const columns = [
     {
       title: "Họ Tên",
@@ -313,7 +375,7 @@ export default function Page() {
       key: "fullName",
       width: 150,
       ellipsis: true,
-      fixed: 'left' as const,
+      fixed: "left" as const,
     },
     {
       title: "Số điện thoại",
@@ -370,57 +432,91 @@ export default function Page() {
       key: "paymentStatus",
       width: 120,
       render: (_: any, record: any) => (
-        <Tag color={record.isPaid ? "green" : "orange"} className="text-center px-2 py-1">
-          {record.isPaid ? 
-            <><CheckCircleOutlined /> Đã thanh toán</> : 
-            "Chưa thanh toán"}
+        <Tag
+          color={record.isPaid ? "green" : "orange"}
+          className="text-center px-2 py-1"
+        >
+          {record.isPaid ? (
+            <>
+              <CheckCircleOutlined /> Đã thanh toán
+            </>
+          ) : (
+            "Chưa thanh toán"
+          )}
         </Tag>
-      )
+      ),
     },
     {
-      title: "Hành động",
-      key: "action",
-      width: 120,
-      fixed: 'right' as const,
-      render: (_: any, record: any) => (
-        !record.isPaid ? (
-          <Popconfirm
-            title="Xác nhận thanh toán"
-            description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
-            onConfirm={() => handlePaymentStatus(record)}
-            okText="Xác nhận"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              icon={<DollarOutlined />} 
-              className="bg-green-500 hover:bg-green-600"
-              size="small"
-            >
-              Thanh toán
-            </Button>
-          </Popconfirm>
-        ) : (
-          <Button 
-            type="default" 
-            size="small" 
-            disabled 
-            className="text-green-500"
-            icon={<CheckCircleOutlined />}
-          >
-            Đã thanh toán
-          </Button>
-        )
-      ),
-    }
+  title: "Hành động",
+  key: "action",
+  width: 120,
+  fixed: "right" as const,
+ render: (_: any, record: any) => (
+  <div className="flex items-center gap-2">
+    {!record.isPaid ? (
+      <Popconfirm
+        title="Xác nhận thanh toán"
+        description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
+        onConfirm={() => handlePaymentStatus(record)}
+        okText="Xác nhận"
+        cancelText="Hủy"
+      >
+        <Button
+          type="primary"
+          icon={<DollarOutlined />}
+          className="bg-green-500 hover:bg-green-600"
+          size="small"
+        >
+          Thanh toán
+        </Button>
+      </Popconfirm>
+    ) : (
+      <Button
+        type="default"
+        size="small"
+        disabled
+        className="text-green-500"
+        icon={<CheckCircleOutlined />}
+      >
+        Đã thanh toán
+      </Button>
+    )}
+
+    <Popconfirm
+      title="Xác nhận xóa"
+      description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
+      onConfirm={() => handleDelete(record)}
+      okText="Xóa"
+      cancelText="Hủy"
+    >
+      <Button
+        danger
+        icon={<DeleteOutlined />}
+        size="small"
+      >
+        Xóa
+      </Button>
+    </Popconfirm>
+  </div>
+)
+
+}
+
   ];
 
   return (
     // Wrapper để tạo full page scrolling
-    <div className="h-full overflow-auto pb-10" style={{ maxHeight: 'calc(100vh - 64px)' }}>
+    <div
+      className="h-full overflow-auto pb-10"
+      style={{ maxHeight: "calc(100vh - 64px)" }}
+    >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
         <h1 className="text-xl font-bold">Quản lý sân</h1>
-        <Button type="primary" onClick={() => setIsOpenModal(true)} className="bg-blue-500 hover:bg-blue-600">
+        <Button
+          type="primary"
+          onClick={() => setIsOpenModal(true)}
+          className="bg-blue-500 hover:bg-blue-600"
+        >
           Đặt Sân
         </Button>
       </div>
@@ -431,8 +527,12 @@ export default function Page() {
           <div className="flex items-center">
             <DollarOutlined className="text-xl sm:text-2xl text-green-500 mr-2" />
             <div>
-              <h3 className="text-base sm:text-lg font-semibold">Tổng doanh thu</h3>
-              <p className="text-xl sm:text-2xl font-bold text-green-600">{revenueStats.totalRevenue.toLocaleString()} VND</p>
+              <h3 className="text-base sm:text-lg font-semibold">
+                Tổng doanh thu
+              </h3>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">
+                {revenueStats.totalRevenue.toLocaleString()} VND
+              </p>
             </div>
           </div>
         </div>
@@ -440,8 +540,12 @@ export default function Page() {
           <div className="flex items-center">
             <CheckCircleOutlined className="text-xl sm:text-2xl text-blue-500 mr-2" />
             <div>
-              <h3 className="text-base sm:text-lg font-semibold">Đặt sân đã thanh toán</h3>
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">{revenueStats.paidCount} / {bookings.length}</p>
+              <h3 className="text-base sm:text-lg font-semibold">
+                Đặt sân đã thanh toán
+              </h3>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">
+                {revenueStats.paidCount} / {bookings.length}
+              </p>
             </div>
           </div>
         </div>
@@ -454,8 +558,8 @@ export default function Page() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <div>
                 <Form.Item label="Tìm theo tên" className="mb-2">
-                  <Input 
-                    placeholder="Nhập tên khách hàng" 
+                  <Input
+                    placeholder="Nhập tên khách hàng"
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
                     allowClear
@@ -465,8 +569,8 @@ export default function Page() {
               </div>
               <div>
                 <Form.Item label="Tìm theo số điện thoại" className="mb-2">
-                  <Input 
-                    placeholder="Nhập số điện thoại" 
+                  <Input
+                    placeholder="Nhập số điện thoại"
                     value={searchPhone}
                     onChange={(e) => setSearchPhone(e.target.value)}
                     allowClear
@@ -487,11 +591,13 @@ export default function Page() {
                       { label: "Sân 3", value: "Sân 3" },
                       { label: "Sân 4", value: "Sân 4" },
                       { label: "Sân 5", value: "Sân 5" },
-                      ...(courtsData.map(court => ({
+                      ...courtsData.map((court) => ({
                         label: court.name,
-                        value: court.name
-                      })))
-                    ].filter((v, i, a) => a.findIndex(t => t.value === v.value) === i)}
+                        value: court.name,
+                      })),
+                    ].filter(
+                      (v, i, a) => a.findIndex((t) => t.value === v.value) === i
+                    )}
                     className="w-full"
                   />
                 </Form.Item>
@@ -505,7 +611,7 @@ export default function Page() {
                     allowClear
                     options={[
                       { label: "Đã thanh toán", value: "paid" },
-                      { label: "Chưa thanh toán", value: "unpaid" }
+                      { label: "Chưa thanh toán", value: "unpaid" },
                     ]}
                     className="w-full"
                   />
@@ -514,7 +620,12 @@ export default function Page() {
             </div>
             <div className="flex justify-end mt-2">
               <Space className="flex-wrap gap-2">
-                <Button icon={<SearchOutlined />} type="primary" onClick={handleSearch} className="bg-blue-500">
+                <Button
+                  icon={<SearchOutlined />}
+                  type="primary"
+                  onClick={handleSearch}
+                  className="bg-blue-500"
+                >
                   Tìm kiếm
                 </Button>
                 <Button onClick={resetSearch}>Đặt lại</Button>
@@ -528,37 +639,31 @@ export default function Page() {
       <div className="w-full border rounded-lg shadow-sm bg-white overflow-hidden">
         <div className="p-3 sm:p-4 border-b bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <h3 className="text-sm sm:text-base font-semibold text-gray-700">
-            {searchCourt ? `Danh sách đặt ${searchCourt}` : 'Tất cả các đặt sân'}
-            {searchPaymentStatus === "paid" ? " (Đã thanh toán)" : 
-             searchPaymentStatus === "unpaid" ? " (Chưa thanh toán)" : ""}
+            {searchCourt
+              ? `Danh sách đặt ${searchCourt}`
+              : "Tất cả các đặt sân"}
+            {searchPaymentStatus === "paid"
+              ? " (Đã thanh toán)"
+              : searchPaymentStatus === "unpaid"
+              ? " (Chưa thanh toán)"
+              : ""}
           </h3>
           <div className="text-xs sm:text-sm text-gray-500">
             Tổng số: {filteredBookings.length} đặt sân
           </div>
         </div>
         <div className="overflow-x-auto w-full">
-          <Table 
-            columns={columns} 
+          <Table
+            columns={columns}
             dataSource={filteredBookings}
-            pagination={{ 
-              pageSize: 10, 
-              position: ['bottomCenter'],
-              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-              responsive: true,
-              size: 'small'
-            }}
-            scroll={{ 
-              x: 'max-content', 
-              y: tableHeight 
-            }}
-            size="middle"
-            className="min-w-full rounded-lg"
+            scroll={{ x: "max-content", y: tableHeight }}
+            className="w-full min-w-full"
             sticky={true}
             summary={(pageData) => {
               let totalAmount = 0;
               let paidAmount = 0;
               let unpaidAmount = 0;
-              
+
               pageData.forEach((record) => {
                 totalAmount += record.totalPrice || 0;
                 if (record.isPaid) {
@@ -567,35 +672,65 @@ export default function Page() {
                   unpaidAmount += record.totalPrice || 0;
                 }
               });
-              
+
               return (
                 <>
                   <Table.Summary.Row>
-                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                    <Table.Summary.Cell
+                      index={0}
+                      colSpan={7}
+                      className="text-right font-semibold"
+                    >
                       Tổng tiền (trang hiện tại):
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={1} className="font-semibold text-blue-600">
+                    <Table.Summary.Cell
+                      index={1}
+                      className="font-semibold text-blue-600"
+                    >
                       {totalAmount.toLocaleString()} VND
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                    <Table.Summary.Cell
+                      index={2}
+                      colSpan={2}
+                    ></Table.Summary.Cell>
                   </Table.Summary.Row>
                   <Table.Summary.Row>
-                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                    <Table.Summary.Cell
+                      index={0}
+                      colSpan={7}
+                      className="text-right font-semibold"
+                    >
                       <span className="text-green-600">Đã thanh toán:</span>
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={1} className="font-semibold text-green-600">
+                    <Table.Summary.Cell
+                      index={1}
+                      className="font-semibold text-green-600"
+                    >
                       {paidAmount.toLocaleString()} VND
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                    <Table.Summary.Cell
+                      index={2}
+                      colSpan={2}
+                    ></Table.Summary.Cell>
                   </Table.Summary.Row>
                   <Table.Summary.Row>
-                    <Table.Summary.Cell index={0} colSpan={7} className="text-right font-semibold">
+                    <Table.Summary.Cell
+                      index={0}
+                      colSpan={7}
+                      className="text-right font-semibold"
+                    >
                       <span className="text-orange-500">Chưa thanh toán:</span>
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={1} className="font-semibold text-orange-500">
+                    <Table.Summary.Cell
+                      index={1}
+                      className="font-semibold text-orange-500"
+                    >
                       {unpaidAmount.toLocaleString()} VND
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+                    <Table.Summary.Cell
+                      index={2}
+                      colSpan={2}
+                    ></Table.Summary.Cell>
                   </Table.Summary.Row>
                 </>
               );
@@ -606,13 +741,17 @@ export default function Page() {
                   <div className="text-gray-500">Không có dữ liệu</div>
                   {(searchCourt || searchPaymentStatus) && (
                     <div className="mt-2">
-                      <Button type="primary" onClick={resetSearch} className="bg-blue-500">
+                      <Button
+                        type="primary"
+                        onClick={resetSearch}
+                        className="bg-blue-500"
+                      >
                         Xem tất cả đặt sân
                       </Button>
                     </div>
                   )}
                 </div>
-              )
+              ),
             }}
           />
         </div>
@@ -636,14 +775,16 @@ export default function Page() {
               <Select
                 className="w-full"
                 placeholder="Chọn sân"
-                options={courtsData.map(court => ({
+                options={courtsData.map((court) => ({
                   label: court.name,
-                  value: court.id
+                  value: court.id,
                 }))}
                 value={formData.courtId}
                 onChange={handleCourtChange}
               />
-              {error.courtId && <p className="text-red-500 text-sm">{error.courtId}</p>}
+              {error.courtId && (
+                <p className="text-red-500 text-sm">{error.courtId}</p>
+              )}
               {formData.courtName && (
                 <p className="mt-2 font-bold text-blue-600">
                   {formData.courtName}
@@ -680,7 +821,9 @@ export default function Page() {
                   maxLength={10}
                   className="w-full"
                 />
-                {error.phone && <p className="text-red-500 text-sm">{error.phone}</p>}
+                {error.phone && (
+                  <p className="text-red-500 text-sm">{error.phone}</p>
+                )}
               </div>
 
               <div>
@@ -694,7 +837,9 @@ export default function Page() {
                   onChange={handleChangeEmail}
                   className="w-full"
                 />
-                {error.email && <p className="text-red-500 text-sm">{error.email}</p>}
+                {error.email && (
+                  <p className="text-red-500 text-sm">{error.email}</p>
+                )}
               </div>
 
               <div>
@@ -710,7 +855,9 @@ export default function Page() {
                     current && current.isBefore(dayjs(), "day")
                   }
                 />
-                {error.date && <p className="text-red-500 text-sm">{error.date}</p>}
+                {error.date && (
+                  <p className="text-red-500 text-sm">{error.date}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

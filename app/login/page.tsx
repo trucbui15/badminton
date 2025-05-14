@@ -94,15 +94,13 @@ const Login = () => {
           </Form.Item>
 
           <div className="flex justify-between text-sm text-gray-500 mb-4">
-  <a href="#" className="hover:text-gray-700">
-    Quên mật khẩu?
-  </a>
-  <Link href="/login/register">
-    <a className="hover:text-gray-700">
-      Đăng ký tài khoản
-    </a>
-  </Link>
-</div>
+            <span className="hover:text-gray-700 cursor-pointer">
+              Quên mật khẩu?
+            </span>
+            <Link href="/login/register" className="hover:text-gray-700">
+              Đăng ký tài khoản
+            </Link>
+          </div>
         </Form>
       </Card>
     </div>

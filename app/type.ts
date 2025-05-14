@@ -1,5 +1,3 @@
-// src/types/formData.ts
-import dayjs from "dayjs";
 
 export type FormDataType = {
   courtId: string;
@@ -7,9 +5,17 @@ export type FormDataType = {
   fullName: string;
   phone: string;
   email: string;
-  date: dayjs.Dayjs | null;
+  date: string;
   startTime: string;
   duration: string;
   endTime: string;
   totalPrice: number;
 };
+
+// export interface courtData {
+//   id: string;
+//   image: string;
+//   name: string;
+//   price: number;
+//   type: string;
+// }
