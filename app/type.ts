@@ -1,21 +1,14 @@
 
 export type FormDataType = {
-  courtId: string;
-  courtName: string;
-  fullName: string;
-  phone: string;
-  email: string;
-  date: string;
-  startTime: string;
-  duration: string;
-  endTime: string;
-  totalPrice: number;
+   fullName: string;
+    phone: string;
+    email: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    duration: string;
+    courtId: number;
+    courtName: string;
+    price: number;
+    totalPrice: number;
 };
-
-// export interface courtData {
-//   id: string;
-//   image: string;
-//   name: string;
-//   price: number;
-//   type: string;
-// }

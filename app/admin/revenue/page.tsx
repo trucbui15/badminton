@@ -6,8 +6,8 @@ import { db } from "@/app/source/firebaseConfig";
 import {
   collection,
   getDocs,
-  addDoc,
-  updateDoc,
+  // addDoc,
+  // updateDoc,
   deleteDoc,
   doc,
   setDoc

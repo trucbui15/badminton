@@ -2,29 +2,44 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Modal, Select } from "antd";
+import { Modal } from "antd";
 import BookingModal from "@/app/user/components/form";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/app/source/firebaseConfig"; 
+import { db } from "@/app/source/firebaseConfig";
 
-
+type Court = {
+  id: number;
+  name: string;
+  type: string;
+  price: number;
+  image: string;
+};
 
 export default function BadmintonSchedule() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [valueName, setValueName] = useState("");
-  const [valuePhoneNumber, setValuePhoneNumber] = useState("");
-  const [valueEmail, setValueEmail] = useState("");
-  const [selectId, setSelectId] = useState(0);
-  const [courtsData, setCourtsData] = useState<any[]>([]);
+  const [selectId, setSelectId] = useState<number>(0);
+  const [courtsData, setCourtsData] = useState<Court[]>([]);
 
   useEffect(() => {
     const fetchCourts = async () => {
       try {
         const snapshot = await getDocs(collection(db, "courts"));
-        const courtsList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const courtsList: Court[] = snapshot.docs.map((doc) => {
+          const idAsNumber = Number(doc.id);
+          if (isNaN(idAsNumber)) {
+            throw new Error(`ID sân không hợp lệ: ${doc.id}`);
+          }
+
+          const data = doc.data();
+          return {
+            id: idAsNumber,
+            name: data.name,
+            type: data.type,
+            price: data.price,
+            image: data.image,
+          };
+        });
+
         setCourtsData(courtsList);
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu sân:", error);
@@ -75,9 +90,9 @@ export default function BadmintonSchedule() {
                   <strong>Loại Sân:</strong> {court.type}
                 </p>
                 <p className="text-sm">
-                 <strong>Giá Sân:</strong> {court.price.toLocaleString('vi-VN')} VND
+                  <strong>Giá Sân:</strong>{" "}
+                  {court.price.toLocaleString("vi-VN")} VND
                 </p>
-
                 <p className="text-xs text-gray-400 mt-2">
                   Cầu lông là thứ tồn tại duy nhất, những thứ còn lại có hay
                   không không quan trọng...

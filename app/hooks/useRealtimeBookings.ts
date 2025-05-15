@@ -1,42 +1,63 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 
-export interface Booking {
+// ✅ Định nghĩa kiểu dữ liệu Booking
+interface Booking {
+  id: string;
+  courtId: string;
+  courtName: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  date: string;
   startTime: string;
   endTime: string;
-  courtId: string;
-  date: string;
+  duration: number;
+  totalPrice: number;
+  createdAt?: "";
 }
 
-export function useRealtimeBookings(courtId: number, date: string | null) {
+export const useRealtimeBookings = (courtId?: string | number, selectedDate?: string) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!date || !courtId) return;
+    if (!courtId || !selectedDate) {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
 
-    const q = query(
+    setLoading(true);
+
+    const bookingsQuery = query(
       collection(db, "bookings"),
       where("courtId", "==", courtId),
-      where("date", "==", date)
+      where("date", "==", selectedDate)
     );
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const updatedBookings: Booking[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        updatedBookings.push({
-          startTime: data.startTime,
-          endTime: data.endTime,
-          courtId: data.courtId,
-          date: data.date,
+    const unsubscribe = onSnapshot(
+      bookingsQuery,
+      (snapshot) => {
+        const bookingsData: Booking[] = [];
+        snapshot.forEach((doc) => {
+          bookingsData.push({ id: doc.id, ...doc.data() } as Booking);
         });
-      });
-      setBookings(updatedBookings);
-    });
+        setBookings(bookingsData);
+        setLoading(false);
+        setError(null);
+      },
+      (err) => {
+        console.error("Lỗi khi lắng nghe đặt sân theo thời gian thực:", err);
+        setError("Có lỗi xảy ra khi tải dữ liệu đặt sân");
+        setLoading(false);
+      }
+    );
 
-    return () => unsubscribe(); // Dừng lắng nghe khi component unmount
-  }, [courtId, date]);
+    return () => unsubscribe();
+  }, [courtId, selectedDate]);
 
-  return bookings;
-}
+  return { bookings, loading, error };
+};
