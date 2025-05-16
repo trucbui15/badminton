@@ -24,7 +24,7 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
-  deleteDoc,
+  deleteDoc
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -34,10 +34,36 @@ import {
   DeleteOutlined  
 } from "@ant-design/icons";
 
+// Define types properly
+interface FormDataType {
+  key?: string;
+  courtId: string;
+  courtName: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  date: dayjs.Dayjs | null;
+  startTime: string;
+  duration: string | number;
+  endTime: string;
+  totalPrice: number;
+  // timestamp: any; // Using any for Firebase timestamp
+  isPaid: boolean;
+  // paidAt?: any; // Optional paid timestamp
+}
+
+interface CourtType {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  image: string;
+}
+
 export default function Page() {
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
-  const [courtsData, setCourtsData] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<FormDataType[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<FormDataType[]>([]);
+  const [courtsData, setCourtsData] = useState<CourtType[]>([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [tableHeight, setTableHeight] = useState(500);
   const [revenueStats, setRevenueStats] = useState({
@@ -58,20 +84,20 @@ export default function Page() {
     return () => window.removeEventListener("resize", updateTableHeight);
   }, []);
 
-  const [isComposing, setIsComposing] = useState(false);
+  const [isComposing] = useState(false);
   const [error, setError] = useState<{ [key: string]: string }>({});
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataType>({
     courtId: "",
     courtName: "",
     fullName: "",
     phone: "",
     email: "",
-    date: null as dayjs.Dayjs | null,
+    date: null,
     startTime: "",
     duration: "",
     endTime: "",
     totalPrice: 0,
-    timestamp: null as any,
+    // timestamp: null,
     isPaid: false,
   });
 
@@ -95,7 +121,8 @@ export default function Page() {
         key: doc.id,
         ...doc.data(),
         isPaid: doc.data().isPaid || false,
-      }));
+      })) as FormDataType[];
+      
       setBookings(bookingsData);
       setFilteredBookings(bookingsData);
       calculateRevenueStats(bookingsData);
@@ -105,7 +132,7 @@ export default function Page() {
   };
 
   // Calculate revenue statistics
-  const calculateRevenueStats = (bookingsData) => {
+  const calculateRevenueStats = (bookingsData: FormDataType[]) => {
     const paidBookings = bookingsData.filter((booking) => booking.isPaid);
     const totalRevenue = paidBookings.reduce(
       (sum, booking) => sum + (booking.totalPrice || 0),
@@ -119,8 +146,12 @@ export default function Page() {
   };
 
   // Handle payment status change
-  const handlePaymentStatus = async (record) => {
+  const handlePaymentStatus = async (record: FormDataType) => {
     try {
+      if (!record.key) {
+        throw new Error("Record key is missing");
+      }
+      
       const bookingRef = doc(db, "bookings", record.key);
       await updateDoc(bookingRef, {
         isPaid: true,
@@ -176,7 +207,8 @@ export default function Page() {
         const courtsList = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        }));
+        })) as CourtType[];
+        
         setCourtsData(courtsList);
       } catch (error) {
         console.error("Lỗi lấy danh sách sân:", error);
@@ -232,7 +264,7 @@ export default function Page() {
   };
 
   // Handle input change
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData({
       ...formData,
       [field]: value,
@@ -254,9 +286,9 @@ export default function Page() {
   };
 
   const durationOptions = [
-    { label: "1 giờ", value: 1 },
-    { label: "2 giờ", value: 2 },
-    { label: "3 giờ", value: 3 },
+    { label: "1 giờ", value: "1" },
+    { label: "2 giờ", value: "2" },
+    { label: "3 giờ", value: "3" },
   ];
 
   const generateTimeSlots = () => {
@@ -333,7 +365,7 @@ export default function Page() {
         duration: "",
         endTime: "",
         totalPrice: 0,
-        timestamp: null,
+        // timestamp: null,
         isPaid: false,
       });
       fetchBookings();
@@ -344,8 +376,12 @@ export default function Page() {
   };
 
   
-const handleDelete = async (record) => {
+const handleDelete = async (record: FormDataType) => {
   try {
+    if (!record.key) {
+      throw new Error("Record key is missing");
+    }
+    
     console.log("Xóa đơn đặt sân với ID:", record.key);
 
     // Sử dụng cú pháp mới nhất quán với phần còn lại của code
@@ -407,7 +443,7 @@ const handleDelete = async (record) => {
       title: "Khung giờ",
       key: "timeRange",
       width: 130,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: FormDataType) => (
         <span>
           {record.startTime} - {record.endTime}
         </span>
@@ -418,7 +454,7 @@ const handleDelete = async (record) => {
       dataIndex: "duration",
       key: "duration",
       width: 100,
-      render: (duration: number) => `${duration} giờ`,
+      render: (duration: number | string) => `${duration} giờ`,
     },
     {
       title: "Tổng tiền",
@@ -431,7 +467,7 @@ const handleDelete = async (record) => {
       title: "Trạng thái",
       key: "paymentStatus",
       width: 120,
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: FormDataType) => (
         <Tag
           color={record.isPaid ? "green" : "orange"}
           className="text-center px-2 py-1"
@@ -451,57 +487,55 @@ const handleDelete = async (record) => {
   key: "action",
   width: 120,
   fixed: "right" as const,
- render: (_: any, record: any) => (
-  <div className="flex items-center gap-2">
-    {!record.isPaid ? (
+  render: (_: unknown, record: FormDataType) => (
+    <div className="flex items-center gap-2">
+      {!record.isPaid ? (
+        <Popconfirm
+          title="Xác nhận thanh toán"
+          description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
+          onConfirm={() => handlePaymentStatus(record)}
+          okText="Xác nhận"
+          cancelText="Hủy"
+        >
+          <Button
+            type="primary"
+            icon={<DollarOutlined />}
+            className="bg-green-500 hover:bg-green-600"
+            size="small"
+          >
+            Thanh toán
+          </Button>
+        </Popconfirm>
+      ) : (
+        <Button
+          type="default"
+          size="small"
+          disabled
+          className="text-green-500"
+          icon={<CheckCircleOutlined />}
+        >
+          Đã thanh toán
+        </Button>
+      )}
+
       <Popconfirm
-        title="Xác nhận thanh toán"
-        description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
-        onConfirm={() => handlePaymentStatus(record)}
-        okText="Xác nhận"
+        title="Xác nhận xóa"
+        description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
+        onConfirm={() => handleDelete(record)}
+        okText="Xóa"
         cancelText="Hủy"
       >
         <Button
-          type="primary"
-          icon={<DollarOutlined />}
-          className="bg-green-500 hover:bg-green-600"
+          danger
+          icon={<DeleteOutlined />}
           size="small"
         >
-          Thanh toán
+          Xóa
         </Button>
       </Popconfirm>
-    ) : (
-      <Button
-        type="default"
-        size="small"
-        disabled
-        className="text-green-500"
-        icon={<CheckCircleOutlined />}
-      >
-        Đã thanh toán
-      </Button>
-    )}
-
-    <Popconfirm
-      title="Xác nhận xóa"
-      description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
-      onConfirm={() => handleDelete(record)}
-      okText="Xóa"
-      cancelText="Hủy"
-    >
-      <Button
-        danger
-        icon={<DeleteOutlined />}
-        size="small"
-      >
-        Xóa
-      </Button>
-    </Popconfirm>
-  </div>
-)
-
+    </div>
+  )
 }
-
   ];
 
   return (
@@ -664,7 +698,7 @@ const handleDelete = async (record) => {
               let paidAmount = 0;
               let unpaidAmount = 0;
 
-              pageData.forEach((record) => {
+              pageData.forEach((record: FormDataType) => {
                 totalAmount += record.totalPrice || 0;
                 if (record.isPaid) {
                   paidAmount += record.totalPrice || 0;

@@ -1,16 +1,16 @@
 "use client";
+
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button, Table, Modal, Form, Input, InputNumber, message } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { db } from "@/app/source/firebaseConfig";
 import {
   collection,
   getDocs,
-  // addDoc,
-  // updateDoc,
   deleteDoc,
   doc,
-  setDoc
+  setDoc,
 } from "firebase/firestore";
 
 interface Court {
@@ -36,11 +36,16 @@ const AdminPage = () => {
         return {
           ...data,
           firestoreId: docSnap.id,
+          // Xử lý nếu Firestore lưu sai đường dẫn ảnh bắt đầu bằng "/public"
+          image: data.image.startsWith("/public")
+            ? data.image.replace("/public", "")
+            : data.image,
         };
       });
       setCourts(courtList);
     } catch (error) {
       console.error("Error fetching courts:", error);
+      message.error("Lấy dữ liệu sân thất bại!");
     }
   };
 
@@ -65,23 +70,25 @@ const AdminPage = () => {
     form.resetFields();
   };
 
- const handleSubmit = async (values: Court) => {
-  try {
-    const { firestoreId, ...courtData } = values;
-    const docId = String(courtData.id); // dùng id làm document ID
+  const handleSubmit = async (values: Court) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { firestoreId: _firestoreId, ...courtData } = values; // Đổi tên để tránh lỗi eslint
 
-    await setDoc(doc(db, "courts", docId), courtData);
-    message.success(editingCourt ? "Cập nhật sân thành công!" : "Thêm sân thành công!");
-    
-    fetchCourts();
-    handleCancel();
-  } catch (error) {
-    console.error("Lỗi khi lưu dữ liệu:", error);
-    message.error("Lưu dữ liệu thất bại.");
-  }
-};
+      // Dùng id làm docId để set hoặc update
+      const docId = String(courtData.id);
 
+      await setDoc(doc(db, "courts", docId), courtData);
 
+      message.success(editingCourt ? "Cập nhật sân thành công!" : "Thêm sân thành công!");
+
+      fetchCourts();
+      handleCancel();
+    } catch (error) {
+      console.error("Lỗi khi lưu dữ liệu:", error);
+      message.error("Lưu dữ liệu thất bại.");
+    }
+  };
 
   const handleDelete = async (firestoreId?: string) => {
     if (!firestoreId) return;
@@ -105,7 +112,16 @@ const AdminPage = () => {
       title: "Ảnh",
       dataIndex: "image",
       key: "image",
-      render: (url: string) => <img src={url} alt="Sân" width={80} />,
+      render: (url: string) => (
+        <Image
+          src={url}
+          alt="Sân"
+          width={80}
+          height={80}
+          style={{ objectFit: "cover", borderRadius: 4 }}
+          unoptimized={true} // Ảnh local trong public không cần optimize
+        />
+      ),
     },
     {
       title: "Tên sân",
@@ -126,7 +142,7 @@ const AdminPage = () => {
     {
       title: "Thao tác",
       key: "action",
-      render: (_: any, record: Court) => (
+      render: (_: unknown, record: Court) => (
         <>
           <Button onClick={() => showModal(record)} type="link">
             Sửa
@@ -142,7 +158,12 @@ const AdminPage = () => {
   return (
     <div>
       <h2 style={{ marginBottom: 16 }}>Quản lý sân cầu lông</h2>
-      <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()} style={{ marginBottom: 16 }}>
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={() => showModal()}
+        style={{ marginBottom: 16 }}
+      >
         Thêm sân mới
       </Button>
 
@@ -155,19 +176,39 @@ const AdminPage = () => {
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="id" label="ID" rules={[{ required: true, message: "Nhập ID!" }]}>
+          <Form.Item
+            name="id"
+            label="ID"
+            rules={[{ required: true, message: "Nhập ID!" }]}
+          >
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="image" label="Đường dẫn ảnh" rules={[{ required: true, message: "Nhập link ảnh!" }]}>
+          <Form.Item
+            name="image"
+            label="Đường dẫn ảnh"
+            rules={[{ required: true, message: "Nhập link ảnh!" }]}
+          >
             <Input placeholder="/images/san1.jpg" />
           </Form.Item>
-          <Form.Item name="name" label="Tên sân" rules={[{ required: true, message: "Nhập tên sân!" }]}>
+          <Form.Item
+            name="name"
+            label="Tên sân"
+            rules={[{ required: true, message: "Nhập tên sân!" }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item name="price" label="Giá thuê (VND)" rules={[{ required: true, message: "Nhập giá!" }]}>
+          <Form.Item
+            name="price"
+            label="Giá thuê (VND)"
+            rules={[{ required: true, message: "Nhập giá!" }]}
+          >
             <InputNumber min={0} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item name="type" label="Loại sân" rules={[{ required: true, message: "Nhập loại sân!" }]}>
+          <Form.Item
+            name="type"
+            label="Loại sân"
+            rules={[{ required: true, message: "Nhập loại sân!" }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item>
