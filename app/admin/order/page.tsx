@@ -1,40 +1,12 @@
 "use client";
 
 import { db } from "@/app/source/firebaseConfig";
-import {
-  Table,
-  Modal,
-  Button,
-  Select,
-  Input,
-  DatePicker,
-  message,
-  Space,
-  Form,
-  Tag,
-  Popconfirm,
-} from "antd";
+import {Table, Modal, Button, Select, Input, DatePicker, message, Space, Form, Tag, Popconfirm } from "antd";
 import dayjs from "dayjs";
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query,
-  addDoc,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  deleteDoc
-} from "firebase/firestore";
+import { collection, getDocs, orderBy, query, addDoc, serverTimestamp, doc, updateDoc, deleteDoc} from "firebase/firestore";
 import { useEffect, useState } from "react";
-import {
-  SearchOutlined,
-  CheckCircleOutlined,
-  DollarOutlined,
-  DeleteOutlined  
-} from "@ant-design/icons";
-
-// Define types properly
+import { SearchOutlined, CheckCircleOutlined, DollarOutlined, DeleteOutlined} from "@ant-design/icons";
+import "./style.css"
 interface FormDataType {
   key?: string;
   courtId: string;
@@ -65,24 +37,24 @@ export default function Page() {
   const [filteredBookings, setFilteredBookings] = useState<FormDataType[]>([]);
   const [courtsData, setCourtsData] = useState<CourtType[]>([]);
   const [isOpenModal, setIsOpenModal] = useState(false);
-  const [tableHeight, setTableHeight] = useState(500);
+  // const [tableHeight, setTableHeight] = useState(500);
   const [revenueStats, setRevenueStats] = useState({
     totalRevenue: 0,
     paidCount: 0,
   });
 
   // Cập nhật chiều cao bảng dựa trên cửa sổ
-  useEffect(() => {
-    const updateTableHeight = () => {
-      const height = window.innerHeight - 300;
-      setTableHeight(Math.max(400, height));
-    };
+  // useEffect(() => {
+  //   const updateTableHeight = () => {
+  //     const height = window.innerHeight - 300;
+  //     setTableHeight(Math.max(400, height));
+  //   };
 
-    updateTableHeight();
-    window.addEventListener("resize", updateTableHeight);
+  //   updateTableHeight();
+  //   window.addEventListener("resize", updateTableHeight);
 
-    return () => window.removeEventListener("resize", updateTableHeight);
-  }, []);
+  //   return () => window.removeEventListener("resize", updateTableHeight);
+  // }, []);
 
   const [isComposing] = useState(false);
   const [error, setError] = useState<{ [key: string]: string }>({});
@@ -122,7 +94,7 @@ export default function Page() {
         ...doc.data(),
         isPaid: doc.data().isPaid || false,
       })) as FormDataType[];
-      
+
       setBookings(bookingsData);
       setFilteredBookings(bookingsData);
       calculateRevenueStats(bookingsData);
@@ -130,6 +102,7 @@ export default function Page() {
       console.error("Lỗi lấy dữ liệu bookings:", error);
     }
   };
+  
 
   // Calculate revenue statistics
   const calculateRevenueStats = (bookingsData: FormDataType[]) => {
@@ -151,7 +124,7 @@ export default function Page() {
       if (!record.key) {
         throw new Error("Record key is missing");
       }
-      
+
       const bookingRef = doc(db, "bookings", record.key);
       await updateDoc(bookingRef, {
         isPaid: true,
@@ -208,7 +181,7 @@ export default function Page() {
           id: doc.id,
           ...doc.data(),
         })) as CourtType[];
-        
+
         setCourtsData(courtsList);
       } catch (error) {
         console.error("Lỗi lấy danh sách sân:", error);
@@ -375,74 +348,77 @@ export default function Page() {
     }
   };
 
-  
-const handleDelete = async (record: FormDataType) => {
-  try {
-    if (!record.key) {
-      throw new Error("Record key is missing");
-    }
-    
-    console.log("Xóa đơn đặt sân với ID:", record.key);
+  const handleDelete = async (record: FormDataType) => {
+    try {
+      if (!record.key) {
+        throw new Error("Record key is missing");
+      }
 
-    // Sử dụng cú pháp mới nhất quán với phần còn lại của code
-    const docRef = doc(db, "bookings", record.key);
-    
-    await deleteDoc(docRef);
-    
-    message.success("Đã xóa đơn đặt sân thành công!");
-    
-    // Cập nhật state sau khi xóa
-    const updatedBookings = bookings.filter(booking => booking.key !== record.key);
-    setBookings(updatedBookings);
-    setFilteredBookings(filteredBookings.filter(booking => booking.key !== record.key));
-    
-    // Cập nhật thống kê
-    calculateRevenueStats(updatedBookings);
-  } catch (error) {
-    console.error("Lỗi khi xóa dữ liệu:", error);
-    message.error("Có lỗi xảy ra khi xóa dữ liệu!");
-  }
-};
+      console.log("Xóa đơn đặt sân với ID:", record.key);
+
+      // Sử dụng cú pháp mới nhất quán với phần còn lại của code
+      const docRef = doc(db, "bookings", record.key);
+
+      await deleteDoc(docRef);
+
+      message.success("Đã xóa đơn đặt sân thành công!");
+
+      // Cập nhật state sau khi xóa
+      const updatedBookings = bookings.filter(
+        (booking) => booking.key !== record.key
+      );
+      setBookings(updatedBookings);
+      setFilteredBookings(
+        filteredBookings.filter((booking) => booking.key !== record.key)
+      );
+
+      // Cập nhật thống kê
+      calculateRevenueStats(updatedBookings);
+    } catch (error) {
+      console.error("Lỗi khi xóa dữ liệu:", error);
+      message.error("Có lỗi xảy ra khi xóa dữ liệu!");
+    }
+  };
 
   const columns = [
     {
       title: "Họ Tên",
       dataIndex: "fullName",
       key: "fullName",
-      width: 150,
+      width: 100,
       ellipsis: true,
-      fixed: "left" as const,
     },
     {
       title: "Số điện thoại",
       dataIndex: "phone",
       key: "phone",
-      width: 130,
+      width: 85,
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
-      width: 180,
+      width: 130,
       ellipsis: true,
     },
     {
       title: "Sân",
       dataIndex: "courtName",
       key: "courtName",
-      width: 120,
+      width: 80,
       ellipsis: true,
     },
     {
       title: "Ngày Đặt Sân",
       dataIndex: "date",
       key: "date",
-      width: 120,
+      width: 100,
+  
     },
     {
       title: "Khung giờ",
       key: "timeRange",
-      width: 130,
+      width: 110,
       render: (_: unknown, record: FormDataType) => (
         <span>
           {record.startTime} - {record.endTime}
@@ -453,14 +429,14 @@ const handleDelete = async (record: FormDataType) => {
       title: "Thời lượng",
       dataIndex: "duration",
       key: "duration",
-      width: 100,
+      width: 70,
       render: (duration: number | string) => `${duration} giờ`,
     },
     {
       title: "Tổng tiền",
       dataIndex: "totalPrice",
       key: "totalPrice",
-      width: 130,
+      width: 100,
       render: (total: number) => `${total?.toLocaleString()} VND`,
     },
     {
@@ -483,59 +459,56 @@ const handleDelete = async (record: FormDataType) => {
       ),
     },
     {
-  title: "Hành động",
-  key: "action",
-  width: 120,
-  fixed: "right" as const,
-  render: (_: unknown, record: FormDataType) => (
-    <div className="flex items-center gap-2">
-      {!record.isPaid ? (
-        <Popconfirm
-          title="Xác nhận thanh toán"
-          description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
-          onConfirm={() => handlePaymentStatus(record)}
-          okText="Xác nhận"
-          cancelText="Hủy"
-        >
-          <Button
-            type="primary"
-            icon={<DollarOutlined />}
-            className="bg-green-500 hover:bg-green-600"
-            size="small"
-          >
-            Thanh toán
-          </Button>
-        </Popconfirm>
-      ) : (
-        <Button
-          type="default"
-          size="small"
-          disabled
-          className="text-green-500"
-          icon={<CheckCircleOutlined />}
-        >
-          Đã thanh toán
-        </Button>
-      )}
-
-      <Popconfirm
-        title="Xác nhận xóa"
-        description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
-        onConfirm={() => handleDelete(record)}
-        okText="Xóa"
-        cancelText="Hủy"
+      title: "Hành động",
+      key: "action",
+      width: 120,
+      fixed: "right" as const,
+      render: (_: unknown, record: FormDataType) => (
+        <div className="flex items-center gap-[20px]">
+  {!record.isPaid ? (
+    <Popconfirm
+      title="Xác nhận thanh toán"
+      description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
+      onConfirm={() => handlePaymentStatus(record)}
+      okText="Xác nhận"
+      cancelText="Hủy"
+    >
+      <Button
+        type="primary"
+        icon={<DollarOutlined />}
+        className="bg-green-500 hover:bg-green-600 px-[20px] py-[6px] min-w-[120px]"
+        size="small"
       >
-        <Button
-          danger
-          icon={<DeleteOutlined />}
-          size="small"
-        >
-          Xóa
-        </Button>
-      </Popconfirm>
-    </div>
-  )
-}
+        Thanh toán
+      </Button>
+    </Popconfirm>
+  ) : (
+    <Button
+      type="default"
+      size="small"
+      disabled
+      className="text-green-500 px-[20px] py-[6px] min-w-[120px]"
+      icon={<CheckCircleOutlined />}
+    >
+      Đã thanh toán
+    </Button>
+  )}
+
+  <Popconfirm
+    title="Xác nhận xóa"
+    description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
+    onConfirm={() => handleDelete(record)}
+    okText="Xóa"
+    cancelText="Hủy"
+  >
+    <Button danger icon={<DeleteOutlined />} size="small">
+      Xóa
+    </Button>
+  </Popconfirm>
+</div>
+
+      ),
+    },
   ];
 
   return (
@@ -670,7 +643,7 @@ const handleDelete = async (record: FormDataType) => {
       </div>
 
       {/* Bảng với thanh cuộn cải tiến */}
-      <div className="w-full border rounded-lg shadow-sm bg-white overflow-hidden">
+      <div className=" w-full border rounded-lg shadow-sm bg-white overflow-hidden">
         <div className="p-3 sm:p-4 border-b bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
           <h3 className="text-sm sm:text-base font-semibold text-gray-700">
             {searchCourt
@@ -686,11 +659,11 @@ const handleDelete = async (record: FormDataType) => {
             Tổng số: {filteredBookings.length} đặt sân
           </div>
         </div>
-        <div className="overflow-x-auto w-full">
+        <div className="overflow-x-auto w-full scroll-container">
           <Table
             columns={columns}
             dataSource={filteredBookings}
-            scroll={{ x: "max-content", y: tableHeight }}
+            // scroll={{ x: "max-content", y: tableHeight }}
             className="w-full min-w-full"
             sticky={true}
             summary={(pageData) => {
@@ -708,65 +681,60 @@ const handleDelete = async (record: FormDataType) => {
               });
 
               return (
-                <>
-                  <Table.Summary.Row>
-                    <Table.Summary.Cell
-                      index={0}
-                      colSpan={7}
-                      className="text-right font-semibold"
-                    >
-                      Tổng tiền (trang hiện tại):
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={1}
-                      className="font-semibold text-blue-600"
-                    >
-                      {totalAmount.toLocaleString()} VND
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={2}
-                      colSpan={2}
-                    ></Table.Summary.Cell>
-                  </Table.Summary.Row>
-                  <Table.Summary.Row>
-                    <Table.Summary.Cell
-                      index={0}
-                      colSpan={7}
-                      className="text-right font-semibold"
-                    >
-                      <span className="text-green-600">Đã thanh toán:</span>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={1}
-                      className="font-semibold text-green-600"
-                    >
-                      {paidAmount.toLocaleString()} VND
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={2}
-                      colSpan={2}
-                    ></Table.Summary.Cell>
-                  </Table.Summary.Row>
-                  <Table.Summary.Row>
-                    <Table.Summary.Cell
-                      index={0}
-                      colSpan={7}
-                      className="text-right font-semibold"
-                    >
-                      <span className="text-orange-500">Chưa thanh toán:</span>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={1}
-                      className="font-semibold text-orange-500"
-                    >
-                      {unpaidAmount.toLocaleString()} VND
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell
-                      index={2}
-                      colSpan={2}
-                    ></Table.Summary.Cell>
-                  </Table.Summary.Row>
-                </>
+        <>
+  <Table.Summary.Row className="bg-gray-100">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800"
+    >
+      💰 Tổng tiền (trang hiện tại):
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      className="text-sm font-semibold text-blue-600"
+    >
+      {totalAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+  </Table.Summary.Row>
+
+  <Table.Summary.Row className="bg-gray-100">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800"
+    >
+      ✅ <span className="text-green-600">Đã thanh toán:</span>
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      className="text-sm font-semibold text-green-600"
+    >
+      {paidAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+  </Table.Summary.Row>
+
+  <Table.Summary.Row className="bg-gray-100 border-t border-gray-300">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800"
+    >
+      ❌ <span className="text-orange-500">Chưa thanh toán:</span>
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      className="text-sm font-semibold text-orange-500"
+    >
+      {unpaidAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+    <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
+  </Table.Summary.Row>
+</>
+
+
               );
             }}
             locale={{
