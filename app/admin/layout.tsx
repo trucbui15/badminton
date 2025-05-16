@@ -4,10 +4,8 @@ import { Menu } from "antd";
 import Sider from "antd/es/layout/Sider";
 import {
   DashboardOutlined,
-  UserOutlined,
   FieldTimeOutlined,
   BarChartOutlined,
-  MessageOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 

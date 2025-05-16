@@ -24,13 +24,15 @@ export const useRealtimeBookings = (courtId?: string | number, selectedDate?: st
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!courtId || !selectedDate) {
+    // Sửa điều kiện kiểm tra để xử lý đúng ID = 0 dạng chuỗi hoặc số
+    if (courtId === null || courtId === undefined || courtId === "" || !selectedDate) {
       setBookings([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
+    console.log(`Đang tải bookings cho sân ID: ${courtId}, ngày: ${selectedDate}`);
 
     const bookingsQuery = query(
       collection(db, "bookings"),
@@ -45,6 +47,7 @@ export const useRealtimeBookings = (courtId?: string | number, selectedDate?: st
         snapshot.forEach((doc) => {
           bookingsData.push({ id: doc.id, ...doc.data() } as Booking);
         });
+        console.log(`Đã tải ${bookingsData.length} booking cho sân ID: ${courtId}`);
         setBookings(bookingsData);
         setLoading(false);
         setError(null);

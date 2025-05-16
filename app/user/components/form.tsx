@@ -32,8 +32,9 @@ const [bookingInfo, setBookingInfo] = useState<FormDataType | null>(null);
 
   // Sử dụng hook realtime để lắng nghe thay đổi đặt sân
   const { bookings: realtimeBookings, loading: realtimeLoading } = useRealtimeBookings(
-    selectedCourtId ?? undefined, selectedDate
-  );
+  selectedCourtId !== null && selectedCourtId !== undefined ? selectedCourtId : undefined, 
+  selectedDate
+);
 
   const [formData, setFormData] = useState({
     courtId: 0,
