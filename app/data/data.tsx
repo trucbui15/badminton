@@ -1,26 +1,146 @@
-// export  const courtsData = [
-//   { id: 0, name: "Sân 1", type: "Thảm Silicon", price: 100000, image: "/images/san1.jpg" },
-//   { id: 1, name: "Sân 2", type: "Thảm PU", price: 120000, image: "/images/san2.jpg" },
-//   { id: 2, name: "Sân 3", type: "Thảm Gỗ", price: 110000, image: "/images/san3.jpg" },
-//   { id: 3, name: "Sân 4", type: "Có mái che", price: 110000, image: "/images/san4.jpg" },
-//   { id: 4, name: "Sân 5", type: "Sân Quốc Tế", price: 990000, image: "/images/san5.jpg" },
-// ];
+import { Tag, Button, Popconfirm } from "antd";
+import { CheckCircleOutlined, DollarOutlined, DeleteOutlined } from "@ant-design/icons";
+import { FormDataType } from "./types"; // Import the FormDataType interface
 
-// import { db } from "@/app/source/firebaseConfig";
-// import {doc, setDoc} from  "firebase/firestore";
+// Các hàm xử lý sẽ được truyền từ component cha qua props
+export const getColumns = (
+  handlePaymentStatus: (record: FormDataType) => void,
+  handleDelete: (record: FormDataType) => void
+) => [
+  {
+    title: "Họ Tên",
+    dataIndex: "fullName",
+    key: "fullName",
+    width: 120,
+    ellipsis: true,
+    className: "text-xs",
+  },
+  {
+    title: "Số điện thoại",
+    dataIndex: "phone",
+    key: "phone",
+    width: 90,
+    className: "text-xs",
+  },
+  {
+    title: "Email",
+    dataIndex: "email",
+    key: "email",
+    width: 130,
+    ellipsis: true,
+    className: "text-xs",
+  },
+  {
+    title: "Sân",
+    dataIndex: "courtName",
+    key: "courtName",
+    width: 80,
+    ellipsis: true,
+    className: "text-xs",
+  },
+  {
+    title: "Ngày Đặt Sân",
+    dataIndex: "date",
+    key: "date",
+    width: 100,
+    className: "text-xs",
+  },
+  {
+    title: "Khung giờ",
+    key: "timeRange",
+    width: 110,
+    className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <span>
+        {record.startTime} - {record.endTime}
+      </span>
+    ),
+  },
+  {
+    title: "Thời lượng",
+    dataIndex: "duration",
+    key: "duration",
+    width: 70,
+    className: "text-xs",
+    render: (duration: number | string) => `${duration} giờ`,
+  },
+  {
+    title: "Tổng tiền",
+    dataIndex: "totalPrice",
+    key: "totalPrice",
+    width: 100,
+    className: "text-xs",
+    render: (total: number) => `${total?.toLocaleString()} VND`,
+  },
+  {
+    title: "Trạng thái",
+    key: "paymentStatus",
+    width: 120,
+    className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <Tag
+        color={record.isPaid ? "green" : "orange"}
+        className="text-center px-2 py-1"
+      >
+        {record.isPaid ? (
+          <>
+            <CheckCircleOutlined /> Đã thanh toán
+          </>
+        ) : (
+          "Chưa thanh toán"
+        )}
+      </Tag>
+    ),
+  },
+  {
+    title: "Hành động",
+    key: "action",
+    width: 120,
+    fixed: "right" as const,
+    className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <div className="flex items-center gap-[20px]">
+        {!record.isPaid ? (
+          <Popconfirm
+            title="Xác nhận thanh toán"
+            description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
+            onConfirm={() => handlePaymentStatus(record)}
+            okText="Xác nhận"
+            cancelText="Hủy"
+          >
+            <Button
+              type="primary"
+              icon={<DollarOutlined />}
+              className="bg-green-500 hover:bg-green-600 px-[20px] py-[6px] min-w-[120px]"
+              size="small"
+            >
+              Thanh toán
+            </Button>
+          </Popconfirm>
+        ) : (
+          <Button
+            type="default"
+            size="small"
+            disabled
+            className="text-green-500 px-[20px] py-[6px] min-w-[120px]"
+            icon={<CheckCircleOutlined />}
+          >
+            Đã thanh toán
+          </Button>
+        )}
 
-// const pushCourtsFirestore = async () => {
-//   try{
-//     for (const court of courtsData){
-//       const docref = doc(db, "courts", court.id.toString());
-//       await setDoc(docref, court);
-//     }
-//     console.log("✅ Đã lưu dữ liệu courts lên Firestore!");
-//   }catch(err){
-//     console.error("❌ Lỗi khi lưu dữ liệu:", err);
-//   }
-// };
-
-// if (process.env.NODE_ENV === "development") {
-//   pushCourtsFirestore();
-// }
+        <Popconfirm
+          title="Xác nhận xóa"
+          description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
+          onConfirm={() => handleDelete(record)}
+          okText="Xóa"
+          cancelText="Hủy"
+        >
+          <Button danger icon={<DeleteOutlined />} size="small">
+            Xóa
+          </Button>
+        </Popconfirm>
+      </div>
+    ),
+  },
+];

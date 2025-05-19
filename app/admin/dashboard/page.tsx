@@ -14,8 +14,9 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
+// import { FormDataType } from "@/app/type";
 
 // Định nghĩa interface cho dữ liệu đặt sân
 interface Booking {
@@ -48,11 +49,32 @@ interface CourtRevenue {
   bookings: number;
 }
 
+// Định nghĩa interface cho tooltip của biểu đồ cột
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    payload: DailyRevenue;
+  }>;
+  label?: string;
+}
+
+// Định nghĩa interface cho tooltip của biểu đồ tròn
+interface PieTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    name: string;
+    value: number;
+    payload: CourtRevenue;
+    percent: number;
+  }>;
+}
+
 // Mảng màu cho biểu đồ tròn
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export default function DashboardPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  // const [ setBookings] = useState<FormDataType[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [courtRevenue, setCourtRevenue] = useState<CourtRevenue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,7 +104,7 @@ export default function DashboardPage() {
           bookingsData.push({ id: doc.id, ...doc.data() } as Booking);
         });
         
-        setBookings(bookingsData);
+        // setBookings(bookingsData);
         processBookingData(bookingsData);
         setLoading(false);
       } catch (error) {
@@ -141,7 +163,7 @@ export default function DashboardPage() {
   };
 
   // Custom tooltip cho biểu đồ cột
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 border rounded shadow">
@@ -155,7 +177,7 @@ export default function DashboardPage() {
   };
 
   // Custom tooltip cho biểu đồ tròn
-  const PieTooltip = ({ active, payload }: any) => {
+  const PieTooltip = ({ active, payload }: PieTooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-4 border rounded shadow">

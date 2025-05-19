@@ -1,5 +1,6 @@
 
 export type FormDataType = {
+    isPaid: any;
    fullName: string;
     phone: string;
     email: string;
