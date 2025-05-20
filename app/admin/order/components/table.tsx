@@ -58,7 +58,7 @@ const TableScroll = ({
               <Table.Summary.Row className="bg-gray-100">
                 <Table.Summary.Cell
                   index={0}
-                  colSpan={7}
+                  colSpan={6}
                   className="text-right text-sm font-semibold text-gray-800"
                 >
                   💰 Tổng tiền (trang hiện tại):
@@ -75,7 +75,7 @@ const TableScroll = ({
               <Table.Summary.Row className="bg-gray-100">
                 <Table.Summary.Cell
                   index={0}
-                  colSpan={7}
+                  colSpan={6}
                   className="text-right text-sm font-semibold text-gray-800"
                 >
                   ✅ <span className="text-green-600">Đã thanh toán:</span>
@@ -92,7 +92,7 @@ const TableScroll = ({
               <Table.Summary.Row className="bg-gray-100 border-t border-gray-300">
                 <Table.Summary.Cell
                   index={0}
-                  colSpan={7}
+                  colSpan={6}
                   className="text-right text-sm font-semibold text-gray-800"
                 >
                   ❌ <span className="text-orange-500">Chưa thanh toán:</span>

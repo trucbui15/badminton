@@ -358,7 +358,29 @@ export default function Page() {
       </div>
 
       {/* Search Form */}
-      <SearchForm />
+      <SearchForm
+      form={searchForm}
+      onSearch={(values) => {
+        setSearchName(values.name || "");
+        setSearchPhone(values.phone || "");
+        setSearchCourt(values.courtId || "");
+        setSearchPaymentStatus(values.paymentStatus || "");
+        const filtered = bookings.filter((booking) => {
+          const nameMatch = values.name ? booking.fullName.toLowerCase().includes(values.name.toLowerCase()) : true;
+          const phoneMatch = values.phone ? booking.phone.includes(values.phone) : true;
+          const courtMatch = values.courtId ? booking.courtId === values.courtId : true;
+          const paymentMatch = values.paymentStatus
+            ? values.paymentStatus === "paid"
+              ? booking.isPaid
+              : !booking.isPaid
+            : true;
+          return nameMatch && phoneMatch && courtMatch && paymentMatch;
+        });
+        setFilteredBookings(filtered);
+      }}
+      onReset={resetSearch}
+      courtsData={courtsData}
+    />
 
       {/* Bảng với thanh cuộn cải tiến */}
       <TableScroll

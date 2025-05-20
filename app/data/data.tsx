@@ -1,4 +1,4 @@
-import { Tag, Button, Popconfirm } from "antd";
+import { Button, Popconfirm } from "antd";
 import { CheckCircleOutlined, DollarOutlined, DeleteOutlined } from "@ant-design/icons";
 import { FormDataType } from "./types"; // Import the FormDataType interface
 
@@ -72,26 +72,26 @@ export const getColumns = (
     className: "text-xs",
     render: (total: number) => `${total?.toLocaleString()} VND`,
   },
-  {
-    title: "Trạng thái",
-    key: "paymentStatus",
-    width: 120,
-    className: "text-xs",
-    render: (_: unknown, record: FormDataType) => (
-      <Tag
-        color={record.isPaid ? "green" : "orange"}
-        className="text-center px-2 py-1"
-      >
-        {record.isPaid ? (
-          <>
-            <CheckCircleOutlined /> Đã thanh toán
-          </>
-        ) : (
-          "Chưa thanh toán"
-        )}
-      </Tag>
-    ),
-  },
+  // {
+  //   title: "Trạng thái",
+  //   key: "paymentStatus",
+  //   width: 120,
+  //   className: "text-xs",
+  //   render: (_: unknown, record: FormDataType) => (
+  //     <Tag
+  //       color={record.isPaid ? "green" : "orange"}
+  //       className="text-center px-2 py-1"
+  //     >
+  //       {record.isPaid ? (
+  //         <>
+  //           <CheckCircleOutlined /> Đã thanh toán
+  //         </>
+  //       ) : (
+  //         "Chưa thanh toán"
+  //       )}
+  //     </Tag>
+  //   ),
+  // },
   {
     title: "Hành động",
     key: "action",
