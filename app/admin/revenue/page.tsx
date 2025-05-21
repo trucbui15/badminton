@@ -2,7 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Button, Table, Modal, Form, Input, InputNumber, message } from "antd";
+import {
+  Button,
+  Table,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  message,
+  Tag,
+  Card,
+  Row,
+  Col,
+} from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { db } from "@/app/source/firebaseConfig";
 import {
@@ -19,7 +31,7 @@ interface Court {
   image: string;
   price: number;
   type: string;
-  firestoreId?: string; // Firestore's internal ID
+  firestoreId?: string;
 }
 
 const AdminPage = () => {
@@ -36,7 +48,6 @@ const AdminPage = () => {
         return {
           ...data,
           firestoreId: docSnap.id,
-          // Xử lý nếu Firestore lưu sai đường dẫn ảnh bắt đầu bằng "/public"
           image: data.image.startsWith("/public")
             ? data.image.replace("/public", "")
             : data.image,
@@ -70,7 +81,7 @@ const AdminPage = () => {
     form.resetFields();
   };
 
-  const handleSubmit = async (values: Court) => {
+   const handleSubmit = async (values: Court) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { firestoreId: _firestoreId, ...courtData } = values; // Đổi tên để tránh lỗi eslint
@@ -118,8 +129,8 @@ const AdminPage = () => {
           alt="Sân"
           width={80}
           height={80}
-          style={{ objectFit: "cover", borderRadius: 4 }}
-          unoptimized={true} // Ảnh local trong public không cần optimize
+          style={{ objectFit: "cover", borderRadius: 6 }}
+          unoptimized
         />
       ),
     },
@@ -138,6 +149,13 @@ const AdminPage = () => {
       title: "Loại sân",
       dataIndex: "type",
       key: "type",
+      render: (type: string) => {
+        let color = "blue";
+        if (type.toLowerCase().includes("thảm")) color = "green";
+        else if (type.toLowerCase().includes("xi măng")) color = "volcano";
+        else if (type.toLowerCase().includes("gỗ")) color = "gold";
+        return <Tag color={color}>{type.toUpperCase()}</Tag>;
+      },
     },
     {
       title: "Thao tác",
@@ -156,72 +174,90 @@ const AdminPage = () => {
   ];
 
   return (
-    <div>
-      <h2 style={{ marginBottom: 16 }}>Quản lý sân cầu lông</h2>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        onClick={() => showModal()}
-        style={{ marginBottom: 16 }}
-      >
-        Thêm sân mới
-      </Button>
+    <Card
+      bordered={false}
+      style={{
+        margin: 24,
+        borderRadius: 12,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+        background: "#f7f9fb",
+      }}
+      title={
+        <div
+          style={{
+            background: "linear-gradient( #5b8)",
+            padding: "12px 24px",
+            borderRadius: 8,
+            color: "#fff",
+            fontWeight: 600,
+            fontSize: 20,
+          }}
+        >
+          🏸 Quản lý sân cầu lông
+        </div>
+      }
+    >
+      <Row justify="end" style={{ marginBottom: 16 }}>
+        <Col>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+            style={{ background: "#52c41a", borderColor: "#52c41a" }}
+          >
+            Thêm sân mới
+          </Button>
+        </Col>
+      </Row>
 
-      <Table dataSource={courts} columns={columns} rowKey="firestoreId" pagination={false} />
+      <Table
+        dataSource={courts}
+        columns={columns}
+        rowKey="firestoreId"
+        pagination={false}
+        bordered
+        style={{
+          background: "#fff",
+          borderRadius: 8,
+          overflow: "hidden",
+        }}
+      />
 
       <Modal
-        title={editingCourt ? "Chỉnh sửa sân" : "Thêm sân mới"}
         open={isModalVisible}
+        title={editingCourt ? "🛠️ Cập nhật sân" : "➕ Thêm sân mới"}
         onCancel={handleCancel}
         footer={null}
+        centered
+        style={{ top: 20 }}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="id"
-            label="ID"
-            rules={[{ required: true, message: "Nhập ID!" }]}
-          >
+          <Form.Item name="id" label="ID" rules={[{ required: true, message: "Nhập ID!" }]}>
             <InputNumber style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="image"
-            label="Đường dẫn ảnh"
-            rules={[{ required: true, message: "Nhập link ảnh!" }]}
-          >
+          <Form.Item name="image" label="Đường dẫn ảnh" rules={[{ required: true }]}>
             <Input placeholder="/images/san1.jpg" />
           </Form.Item>
-          <Form.Item
-            name="name"
-            label="Tên sân"
-            rules={[{ required: true, message: "Nhập tên sân!" }]}
-          >
+          <Form.Item name="name" label="Tên sân" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item
-            name="price"
-            label="Giá thuê (VND)"
-            rules={[{ required: true, message: "Nhập giá!" }]}
-          >
-            <InputNumber min={0} style={{ width: "100%" }} />
+          <Form.Item name="price" label="Giá thuê (VND)" rules={[{ required: true }]}>
+            <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>
-          <Form.Item
-            name="type"
-            label="Loại sân"
-            rules={[{ required: true, message: "Nhập loại sân!" }]}
-          >
+          <Form.Item name="type" label="Loại sân" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item>
-            <Button htmlType="submit" type="primary">
+          <Form.Item style={{ textAlign: "right" }}>
+            <Button type="primary" htmlType="submit" style={{ background: "#1890ff" }}>
               {editingCourt ? "Cập nhật" : "Thêm mới"}
             </Button>
-            <Button onClick={handleCancel} style={{ marginLeft: 8 }}>
+            <Button onClick={handleCancel} style={{ marginLeft: 8 }} danger ghost>
               Hủy
             </Button>
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </Card>
   );
 };
 

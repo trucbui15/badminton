@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { isTimeConflict } from "@/app/source/timeprocessing";
 import { useRealtimeBookings } from "@/app/hooks/useRealtimeBookings";
-import { FormDataType } from "@/app/type";
+import { FormDataType } from "@/app/data/types";
 import { FirebaseError } from "firebase/app";
 
 
@@ -370,18 +370,21 @@ const [bookingInfo, setBookingInfo] = useState<FormDataType | null>(null);
           startTime: formattedStartTime,
           endTime: calculatedEndTime,
           duration,
-          courtId: courtData.id,
+          courtId: String(courtData.id),
           courtName: courtData.name,
           price: courtData.price,
           totalPrice: calculatePrice(),
+          isPaid: false,
           timestamp: serverTimestamp(),
         };
 
         transaction.set(newBookingRef, bookingData);
 
         // Lưu thông tin cho UI sau khi transaction thành công
-        setBookingInfo(bookingData);
-      });
+setBookingInfo({
+  ...bookingData,
+  date: dayjs(formattedDate, "YYYY-MM-DD"), // chuyển về Dayjs
+});      });
 
       // Gửi email sau khi transaction xong
       await fetch(
@@ -627,8 +630,7 @@ const [bookingInfo, setBookingInfo] = useState<FormDataType | null>(null);
             </Text>
             <Text strong>
               📅 <b style={{ opacity: 0.7 }}>Ngày đặt sân:</b>{" "}
-              {bookingInfo?.date || "Chưa có"}
-            </Text>
+{bookingInfo?.date ? (dayjs.isDayjs(bookingInfo.date) ? bookingInfo.date.format("DD/MM/YYYY") : bookingInfo.date) : "Chưa có"}            </Text>
             <Text strong>
               ⏰ <b style={{ opacity: 0.7 }}>Giờ bắt đầu:</b>{" "}
               {bookingInfo?.startTime || "Chưa có"}
