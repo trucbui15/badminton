@@ -2,6 +2,9 @@
 import "./globals.css";
 import { AntdRegistry } from "@ant-design/nextjs-registry";
 import { Toast } from 'primereact/toast';
+import "primereact/resources/themes/lara-light-blue/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 import { useRef } from 'react';
 
 

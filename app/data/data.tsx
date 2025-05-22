@@ -93,11 +93,12 @@ export const getColumns = (
   //   ),
   // },
   {
-    title: "Hành động",
-    key: "action",
-    width: 120,
-    fixed: "right" as const,
-    className: "text-xs",
+  title: "Hành động",
+  key: "action",
+  width: 200,
+  fixed: "right" as const,
+  align: "center" as const, // ✅ Ép kiểu đúng
+  className: "text-xs text-center", // ✅ Chỉ ảnh hưởng tiêu đề
     render: (_: unknown, record: FormDataType) => (
       <div className="flex items-center gap-[20px]">
         {!record.isPaid ? (

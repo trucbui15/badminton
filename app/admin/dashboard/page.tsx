@@ -77,7 +77,6 @@ export default function DashboardPage() {
   // const [ setBookings] = useState<FormDataType[]>([]);
   const [dailyRevenue, setDailyRevenue] = useState<DailyRevenue[]>([]);
   const [courtRevenue, setCourtRevenue] = useState<CourtRevenue[]>([]);
-  const [loading, setLoading] = useState(true);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalBookings, setTotalBookings] = useState(0);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
@@ -106,10 +105,8 @@ export default function DashboardPage() {
         
         // setBookings(bookingsData);
         processBookingData(bookingsData);
-        setLoading(false);
       } catch (error) {
         console.error("Error fetching bookings: ", error);
-        setLoading(false);
       }
     };
 
@@ -190,14 +187,6 @@ export default function DashboardPage() {
     }
     return null;
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
 
   return (
   <div className="flex flex-col h-screen">

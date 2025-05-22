@@ -34,7 +34,8 @@ const TableScroll = ({
       </div>
     </div>
     <div className="overflow-x-auto w-full scroll-container">
-      <Table
+      <Table 
+        scroll={{ x: "max-content" }} // hoặc scroll={{ x: 1000 }}
         columns={columns}
         dataSource={dataSource}
         className="w-full min-w-full"
@@ -55,57 +56,61 @@ const TableScroll = ({
 
           return (
             <>
-              <Table.Summary.Row className="bg-gray-100">
-                <Table.Summary.Cell
-                  index={0}
-                  colSpan={6}
-                  className="text-right text-sm font-semibold text-gray-800"
-                >
-                  💰 Tổng tiền (trang hiện tại):
-                </Table.Summary.Cell>
-                <Table.Summary.Cell
-                  index={1}
-                  className="text-sm font-semibold text-blue-600"
-                >
-                  {totalAmount.toLocaleString()} VND
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-              </Table.Summary.Row>
+  {/* Tổng tiền */}
+  <Table.Summary.Row className="bg-gray-100">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800 pr-4"
+    >
+      💰 Tổng tiền (trang hiện tại):
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      colSpan={2}
+      className="text-left text-sm font-semibold text-blue-600 pl-2"
+    >
+      {totalAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+  </Table.Summary.Row>
 
-              <Table.Summary.Row className="bg-gray-100">
-                <Table.Summary.Cell
-                  index={0}
-                  colSpan={6}
-                  className="text-right text-sm font-semibold text-gray-800"
-                >
-                  ✅ <span className="text-green-600">Đã thanh toán:</span>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell
-                  index={1}
-                  className="text-sm font-semibold text-green-600"
-                >
-                  {paidAmount.toLocaleString()} VND
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-              </Table.Summary.Row>
+  {/* Đã thanh toán */}
+  <Table.Summary.Row className="bg-gray-100">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800 pr-4"
+    >
+      ✅ <span className="text-green-600">Đã thanh toán:</span>
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      colSpan={2}
+      className="text-left text-sm font-semibold text-green-600 pl-2"
+    >
+      {paidAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+  </Table.Summary.Row>
 
-              <Table.Summary.Row className="bg-gray-100 border-t border-gray-300">
-                <Table.Summary.Cell
-                  index={0}
-                  colSpan={6}
-                  className="text-right text-sm font-semibold text-gray-800"
-                >
-                  ❌ <span className="text-orange-500">Chưa thanh toán:</span>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell
-                  index={1}
-                  className="text-sm font-semibold text-orange-500"
-                >
-                  {unpaidAmount.toLocaleString()} VND
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2} colSpan={2}></Table.Summary.Cell>
-              </Table.Summary.Row>
-            </>
+  {/* Chưa thanh toán */}
+  <Table.Summary.Row className="bg-gray-100 border-t border-gray-300">
+    <Table.Summary.Cell
+      index={0}
+      colSpan={7}
+      className="text-right text-sm font-semibold text-gray-800 pr-4"
+    >
+      ❌ <span className="text-orange-500">Chưa thanh toán:</span>
+    </Table.Summary.Cell>
+    <Table.Summary.Cell
+      index={1}
+      colSpan={2}
+      className="text-left text-sm font-semibold text-orange-500 pl-2"
+    >
+      {unpaidAmount.toLocaleString()} VND
+    </Table.Summary.Cell>
+  </Table.Summary.Row>
+</>
+
           );
         }}
         locale={{
