@@ -262,6 +262,7 @@
       return slots;
     };
 
+    
     const calculateEndTime = () => {
       if (!formData.startTime || !formData.duration) return "";
       const [hours, minutes] = formData.startTime.split(":").map(Number);
@@ -272,13 +273,15 @@
     };
 
     const handleCourtChange = (courtId: string) => {
-      const selectedCourt = courtsData.find((court) => court.id === courtId);
-      setFormData({
-        ...formData,
-        courtId,
-        courtName: selectedCourt?.name || "",
-      });
-    };
+  const selectedCourt = courtsData.find(
+    (court) => String(court.id) === String(courtId)
+  );
+  setFormData({
+    ...formData,
+    courtId,
+    courtName: selectedCourt?.name || "",
+  });
+};
 
     const handleSubmit = async () => {
       // Validate form data
