@@ -264,13 +264,23 @@
 
     
     const calculateEndTime = () => {
-      if (!formData.startTime || !formData.duration) return "";
-      const [hours, minutes] = formData.startTime.split(":").map(Number);
-      const endHour = hours + Number(formData.duration);
-      return `${endHour.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")}`;
-    };
+  if (!formData.startTime || !formData.duration) return "";
+  // Map giá trị duration sang số phút
+  const durationMap: { [key: string]: number } = {
+    "0.5": 30,
+    "1": 60,
+    "2": 120,
+    "3": 180,
+    "30m": 30,
+    "1h": 60,
+    "2h": 120,
+    "3h": 180,
+  };
+  const durationInMinutes = durationMap[formData.duration] || 60;
+  const start = dayjs(formData.startTime, "HH:mm");
+  const end = start.add(durationInMinutes, "minute");
+  return end.format("HH:mm");
+};
 
     const handleCourtChange = (courtId: string) => {
   const selectedCourt = courtsData.find(
