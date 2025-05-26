@@ -5,7 +5,7 @@ import { db } from "@/app/source/firebaseConfig";
 // ✅ Định nghĩa kiểu dữ liệu Booking
 interface Booking {
   id: string;
-  courtId: string;
+  courtId: number;
   courtName: string;
   fullName: string;
   phone: string;
@@ -18,15 +18,13 @@ interface Booking {
   createdAt?: "";
 }
 
-export const useRealtimeBookings = (courtId?: string | number, selectedDate?: string) => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
+export const useRealtimeBookings = (courtId?: number, selectedDate?: string) => {  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Sửa điều kiện kiểm tra để xử lý đúng ID = 0 dạng chuỗi hoặc số
-    if (courtId === null || courtId === undefined || courtId === "" || !selectedDate) {
-      setBookings([]);
+if (courtId === null || courtId === undefined || !selectedDate) {      setBookings([]);
       setLoading(false);
       return;
     }

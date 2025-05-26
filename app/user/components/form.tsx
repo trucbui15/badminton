@@ -211,27 +211,38 @@ const [bookingInfo, setBookingInfo] = useState<FormDataType | null>(null);
   };
 
   // Kiểm tra xem giờ bắt đầu hiện tại và thời lượng đã chọn có bị xung đột với các booking hiện có không
-  useEffect(() => {
-    if (formData.startTime && formData.date) {
-      const endTime = calculateEndTime();
-      const isConflict = isTimeConflict(
-        formData.startTime,
-        endTime,
-        realtimeBookings.map(b => ({ startTime: b.startTime, endTime: b.endTime }))
-      );
-      
-      if (isConflict) {
-        setError(prev => ({ ...prev, startTime: "Khung giờ này đã được đặt!" }));
-      } else {
-        setError(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.startTime;
-          return newErrors;
-        });
-      }
-    }
-  }, [formData.startTime, formData.duration, realtimeBookings]);
+useEffect(() => {
+  if (formData.startTime && formData.date) {
+    const endTime = calculateEndTime();
+    const bookings = realtimeBookings.map(b => ({ startTime: b.startTime, endTime: b.endTime }));
 
+    // Log tiếng Việt để kiểm tra dữ liệu
+    console.log("▶️ Giờ bắt đầu bạn chọn:", formData.startTime);
+    console.log("▶️ Thời lượng bạn chọn:", formData.duration);
+    console.log("▶️ Ngày bạn chọn:", formData.date);
+    console.log("▶️ Giờ kết thúc tính được:", endTime);
+    console.log("▶️ Danh sách đặt sân realtime:", realtimeBookings);
+    console.log("▶️ Danh sách khung giờ đã đặt để kiểm tra trùng:", bookings);
+
+    const isConflict = isTimeConflict(
+      formData.startTime,
+      endTime,
+      bookings
+    );
+
+    console.log("❗ Kết quả kiểm tra trùng khung giờ:", isConflict);
+
+    if (isConflict) {
+      setError(prev => ({ ...prev, startTime: "Khung giờ này đã được đặt!" }));
+    } else {
+      setError(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.startTime;
+        return newErrors;
+      });
+    }
+  }
+}, [formData.startTime, formData.duration, formData.date, realtimeBookings]);
   const validateBooking = () => {
     const { fullName, phone, email, date, startTime, duration } = formData;
     const error: { [key: string]: string } = {};
@@ -363,21 +374,20 @@ const [bookingInfo, setBookingInfo] = useState<FormDataType | null>(null);
 
         const newBookingRef = doc(bookingRef); // tạo doc ID mới
         const bookingData = {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          email: formData.email,
-          date: formattedDate,
-          startTime: formattedStartTime,
-          endTime: calculatedEndTime,
-          duration,
-          courtId: String(courtData.id),
-          courtName: courtData.name,
-          price: courtData.price,
-          totalPrice: calculatePrice(),
-          isPaid: false,
-          timestamp: serverTimestamp(),
-        };
-
+  fullName: formData.fullName,
+  phone: formData.phone,
+  email: formData.email,
+  date: formattedDate,
+  startTime: formattedStartTime,
+  endTime: calculatedEndTime,
+  duration,
+  courtId: courtData.id, // ✅ Lưu dạng number thay vì String
+  courtName: courtData.name,
+  price: courtData.price,
+  totalPrice: calculatePrice(),
+  isPaid: false,
+  timestamp: serverTimestamp(),
+};
         transaction.set(newBookingRef, bookingData);
 
         // Lưu thông tin cho UI sau khi transaction thành công

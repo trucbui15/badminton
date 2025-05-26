@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 
 export interface FormDataType {
   key?: string;
-  courtId: string;
+  courtId: number;
   courtName: string;
   fullName: string;
   phone: string;

@@ -254,14 +254,20 @@
     };
 
     const generateTimeSlots = () => {
-      const slots = [];
-      for (let i = 5; i <= 22; i++) {
-        const hour = i.toString().padStart(2, "0") + ":00";
-        slots.push({ label: hour, value: hour });
-      }
-      return slots;
-    };
+  const slots = [];
+  let start = dayjs().hour(5).minute(0); // 05:00
+  const end = dayjs().hour(21).minute(0); // 21:00
 
+  while (start.isBefore(end) || start.isSame(end)) {
+    const timeStr = start.format("HH:mm");
+    slots.push({
+      label: timeStr,
+      value: timeStr,
+    });
+    start = start.add(30, "minute");
+  }
+  return slots;
+};
     
     const calculateEndTime = () => {
   if (!formData.startTime || !formData.duration) return "";
@@ -313,22 +319,37 @@
         return;
       }
 
-      const endTime = calculateEndTime();
-      const totalPrice = Number(formData.duration) * 100000;
+    const endTime = calculateEndTime();
 
-      const newBooking = {
-        ...formData,
-        courtId: String(formData.courtId),  
-        endTime,
-        totalPrice,
-        date: formData.date
-          ? typeof formData.date !== "string"
-            ? formData.date.format("DD/MM/YYYY")
-            : formData.date
-          : "",
-        timestamp: serverTimestamp(),
-        isPaid: false,
-      };
+// Lấy giá sân theo courtId
+const selectedCourt = courtsData.find(
+  (court) => String(court.id) === String(formData.courtId)
+);
+const courtPrice = selectedCourt ? selectedCourt.price : 0;
+
+// Map value sang số giờ
+const durationMap: { [key: string]: number } = {
+  "30m": 0.5,
+  "1h": 1,
+  "2h": 2,
+  "3h": 3,
+};
+const durationInHours = durationMap[formData.duration] || 1;
+const totalPrice = durationInHours * courtPrice;
+
+const newBooking = {
+  ...formData,
+  courtId: String(formData.courtId),
+  endTime,
+  totalPrice,
+  date: formData.date
+    ? typeof formData.date !== "string"
+      ? formData.date.format("DD/MM/YYYY")
+      : formData.date
+    : "",
+  timestamp: serverTimestamp(),
+  isPaid: false,
+};
 
       try {
         await addDoc(collection(db, "bookings"), newBooking);

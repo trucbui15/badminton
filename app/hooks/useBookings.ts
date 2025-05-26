@@ -4,7 +4,7 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 
 export const useBookings = () => {
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
