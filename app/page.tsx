@@ -6,6 +6,7 @@ import { Modal } from "antd";
 import BookingModal from "@/app/user/components/form";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
+import ChatBot from "@/app/chatbotdemo/chatbot";
 
 type Court = {
   id: number;
@@ -102,6 +103,10 @@ export default function BadmintonSchedule() {
           ))}
         </div>
       </div>
+       <div>
+      <h1 className="text-xl font-bold mb-4"></h1>
+      <ChatBot />
+    </div>
 
       {/* Booking Modal */}
       <Modal
