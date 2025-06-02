@@ -18,7 +18,7 @@ export interface FormDataType {
   // paidAt?: any; // Option
 }
 export interface CourtType {
-  id: string;
+  id: number;
   name: string;
   type: string;
   price: number;
