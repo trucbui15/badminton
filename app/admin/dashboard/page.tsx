@@ -233,32 +233,49 @@ export default function DashboardPage() {
       
       {/* Biểu đồ doanh thu theo sân */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-lg shadow p-6 overflow-hidden">
-          <h2 className="text-xl font-semibold mb-4">Doanh thu theo sân</h2>
-          <div className="w-full" style={{ height: "45vh", minHeight: "300px", maxHeight: "400px" }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={courtRevenue}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={windowWidth < 768 ? 80 : 120}
-                  fill="#8884d8"
-                  dataKey="value"
-                  nameKey="name"
-                  label={(entry) => entry.name}
-                >
-                  {courtRevenue.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<PieTooltip />} />
-                <Legend layout={windowWidth < 768 ? "horizontal" : "vertical"} align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+  <h2 className="text-lg md:text-xl font-semibold mb-4">Doanh thu theo sân</h2>
+  <div className="w-full overflow-x-auto">
+    <div
+      style={{
+        minWidth: windowWidth < 640 ? 320 : 0, // Đảm bảo không bị bóp nhỏ trên mobile
+        height: windowWidth < 640 ? "220px" : "45vh",
+        minHeight: "180px",
+        maxHeight: "400px",
+      }}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={courtRevenue}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={windowWidth < 640 ? 60 : windowWidth < 768 ? 80 : 120}
+            fill="#8884d8"
+            dataKey="value"
+            nameKey="name"
+            label={(entry) => entry.name}
+          >
+            {courtRevenue.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<PieTooltip />} />
+          <Legend
+            layout={windowWidth < 768 ? "horizontal" : "vertical"}
+            align="right"
+            verticalAlign="middle"
+            wrapperStyle={{
+              overflowX: windowWidth < 768 ? "auto" : "visible",
+              maxWidth: windowWidth < 640 ? 200 : "none",
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
         
         {/* Bảng chi tiết doanh thu theo sân */}
         <div className="bg-white rounded-lg shadow p-6 overflow-x-auto">

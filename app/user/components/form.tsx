@@ -686,49 +686,50 @@ setFormData((prev) => ({
         )}
       </div>
 
-      <div className="flex gap-4">
-        <div className="w-1/2">
-          <label className="block text-gray-700 font-semibold mb-1">
-            Thời Gian Bắt Đầu
-          </label>
-          <Select
-            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-            placeholder="Chọn giờ bắt đầu"
-            options={generateTimeSlots()}
-            value={formData.startTime}
-            onChange={(value) => handleChange("startTime", value)}
-            status={error.startTime ? "error" : ""}
-          />
-          {error.startTime && (
-            <p className="text-red-500 text-sm mt-1">{error.startTime}</p>
-          )}
-        </div>
+      {/* ...existing code... */}
+<div className="flex flex-col md:flex-row gap-4">
+  <div className="w-full md:w-1/2">
+    <label className="block text-gray-700 font-semibold mb-1">
+      Thời Gian Bắt Đầu
+    </label>
+    <Select
+      className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+      placeholder="Chọn giờ bắt đầu"
+      options={generateTimeSlots()}
+      value={formData.startTime}
+      onChange={(value) => handleChange("startTime", value)}
+      status={error.startTime ? "error" : ""}
+    />
+    {error.startTime && (
+      <p className="text-red-500 text-sm mt-1">{error.startTime}</p>
+    )}
+  </div>
 
-        <div className="w-1/2">
-          <label className="block text-gray-700 font-semibold mb-1">
-            Thời Gian Kết Thúc
-          </label>
-          <Select
-            className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
-            placeholder="Chọn thời gian chơi"
-            options={durationOptions}
-            value={formData.duration}
-            onChange={(value) => handleChange("duration", value)}
-          />
-          {formData.startTime && (
-            <p className="mt-2 text-gray-700">
-              Giờ kết thúc: {calculateEndTime()}
-            </p>
-          )}
-          {error.endTime && (
-            <p className="text-red-500 text-sm mt-1">{error.endTime}</p>
-          )}
-        </div>
-      </div>
+  <div className="w-full md:w-1/2">
+    <label className="block text-gray-700 font-semibold mb-1">
+      Thời Gian Kết Thúc
+    </label>
+    <Select
+      className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
+      placeholder="Chọn thời gian chơi"
+      options={durationOptions}
+      value={formData.duration}
+      onChange={(value) => handleChange("duration", value)}
+    />
+    {formData.startTime && (
+      <p className="mt-2 text-gray-700">
+        Giờ kết thúc: {calculateEndTime()}
+      </p>
+    )}
+    {error.endTime && (
+      <p className="text-red-500 text-sm mt-1">{error.endTime}</p>
+    )}
+  </div>
+</div>
+
     </>
   )}
 
-  {/* Nếu đặt tháng thì hiện block đặt tháng */}
   {isMonthly && (
     <div className="border p-3 rounded-lg mb-4 bg-blue-50 mt-4">
       <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
