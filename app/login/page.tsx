@@ -2,36 +2,31 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Form, Input, Button, Card } from "antd";
+import { Form, Input, Button, Card, message } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/app/source/firebaseConfig";
 import Link from "next/link";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "@/app/source/firebaseConfig";
 
 const Login = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
+
+  const auth = getAuth(app);
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
     try {
-      const q = query(
-        collection(db, "admins"),
-        where("email", "==", values.email),
-        where("password", "==", values.password)
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        console.log("Đăng nhập thành công");
-        router.push("/admin/dashboard");
-      } else {
-        alert("Sai email hoặc mật khẩu!");
-      }
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      message.success("Đăng nhập thành công");
+      router.push("/admin/dashboard");
     } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
-      alert("Đã xảy ra lỗi khi đăng nhập!");
+      if (error instanceof Error) {
+        message.error("Sai email hoặc mật khẩu!");
+      } else {
+        message.error("Đã xảy ra lỗi không xác định!");
+      }
     } finally {
       setLoading(false);
     }
@@ -52,6 +47,7 @@ const Login = () => {
         </div>
 
         <Form
+          form={form}
           name="login"
           layout="vertical"
           initialValues={{ remember: true }}
@@ -94,9 +90,9 @@ const Login = () => {
           </Form.Item>
 
           <div className="flex justify-between text-sm text-gray-500 mb-4">
-            <span className="hover:text-gray-700 cursor-pointer">
+            <Link href="/login/forgot-password" className="hover:text-gray-700">
               Quên mật khẩu?
-            </span>
+            </Link>
             <Link href="/login/register" className="hover:text-gray-700">
               Đăng ký tài khoản
             </Link>

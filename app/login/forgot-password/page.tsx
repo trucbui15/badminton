@@ -3,39 +3,36 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Form, Input, Button, Card, message } from "antd";
-import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { MailOutlined } from "@ant-design/icons";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { app } from "@/app/source/firebaseConfig";
 import Link from "next/link";
 import Image from "next/image";
 
-const Register = () => {
-  const router = useRouter();
+const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
-
+  const [form] = Form.useForm();
+  const router = useRouter();
   const auth = getAuth(app);
 
-  const onFinish = async (values: { email: string; password: string }) => {
+  const onFinish = async (values: { email: string }) => {
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
-      message.success("Đăng ký thành công! Vui lòng đăng nhập.");
+      await sendPasswordResetEmail(auth, values.email);
+      message.success("Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư!");
       router.push("/login");
     } catch (error) {
-      // FirebaseError có thuộc tính code, nhưng để an toàn kiểm tra kiểu dữ liệu
       if (typeof error === "object" && error && "code" in error) {
         const err = error as { code: string };
-        if (err.code === "auth/email-already-in-use") {
-          message.error("Email đã được sử dụng!");
+        if (err.code === "auth/user-not-found") {
+          message.error("Email này chưa được đăng ký!");
         } else if (err.code === "auth/invalid-email") {
           message.error("Email không hợp lệ!");
-        } else if (err.code === "auth/weak-password") {
-          message.error("Mật khẩu phải có ít nhất 6 ký tự!");
         } else {
-          message.error("Đã xảy ra lỗi khi đăng ký.");
+          message.error("Đã xảy ra lỗi khi gửi email.");
         }
       } else {
-        message.error("Đã xảy ra lỗi khi đăng ký.");
+        message.error("Đã xảy ra lỗi khi gửi email.");
       }
     } finally {
       setLoading(false);
@@ -60,37 +57,21 @@ const Register = () => {
             className="px-8 object-contain"
             priority
           />
-          <h2 className="text-xl font-bold mt-2">Đăng ký tài khoản Admin</h2>
+          <h2 className="text-xl font-bold mt-2">Quên mật khẩu</h2>
         </div>
 
-        <Form layout="vertical" onFinish={onFinish}>
+        <Form layout="vertical" onFinish={onFinish} form={form}>
           <Form.Item
             name="email"
             label="Email"
-            rules={[{ required: true, message: "Vui lòng nhập email!" }]}
-          >
-            <Input
-              prefix={<UserOutlined />}
-              placeholder="Nhập email"
-              size="large"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="password"
-            label="Mật khẩu"
             rules={[
-              { required: true, message: "Vui lòng nhập mật khẩu!" },
-              {
-                pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}$/,
-                message:
-                  "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ thường, chữ hoa và ký tự đặc biệt!",
-              },
+              { required: true, message: "Vui lòng nhập email!" },
+              { type: "email", message: "Email không hợp lệ!" },
             ]}
           >
-            <Input.Password
-              prefix={<LockOutlined />}
-              placeholder="Nhập mật khẩu"
+            <Input
+              prefix={<MailOutlined />}
+              placeholder="Nhập email đã đăng ký"
               size="large"
             />
           </Form.Item>
@@ -104,12 +85,12 @@ const Register = () => {
               className="bg-blue-600 hover:bg-blue-700 uppercase font-bold"
               size="large"
             >
-              ĐĂNG KÝ
+              GỬI YÊU CẦU
             </Button>
           </Form.Item>
 
           <div className="text-center text-sm text-gray-600">
-            Đã có tài khoản?{" "}
+            Đã nhớ mật khẩu?{" "}
             <Link href="/login" className="text-blue-500 hover:underline">
               Đăng nhập
             </Link>
@@ -120,4 +101,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default ForgotPassword;

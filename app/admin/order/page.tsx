@@ -386,7 +386,7 @@ const handleCourtChange = (courtId: number) => {
     <>
       <Toast ref={toast} />
       <div
-        className="h-full overflow-auto pb-10"
+        className="h-full overflow-auto pb-10 bg-gray-50"
         style={{ maxHeight: "calc(100vh - 64px)" }}
       >
         <Title onOpenModal={() => setIsOpenModal(true)} />
@@ -421,53 +421,57 @@ const handleCourtChange = (courtId: number) => {
         </div>
 
         {/* Search Form */}
-        <SearchForm
-          form={searchForm}
-          onSearch={(values) => {
-            setSearchName(values.name || "");
-            setSearchPhone(values.phone || "");
-            setSearchCourt(values.courtId || "");
-            setSearchPaymentStatus(values.paymentStatus || "");
+        <div className="w-full max-w-full sm:max-w-2xl lg:max-w-5xl mx-auto">
+          <SearchForm
+            form={searchForm}
+            onSearch={(values) => {
+              setSearchName(values.name || "");
+              setSearchPhone(values.phone || "");
+              setSearchCourt(values.courtId || "");
+              setSearchPaymentStatus(values.paymentStatus || "");
 
-            const filtered = bookings.filter((booking) => {
-              const nameMatch = values.name
-                ? booking.fullName
-                    .toLowerCase()
-                    .includes(values.name.toLowerCase())
-                : true;
-
-              const phoneMatch = values.phone
-                ? booking.phone.includes(values.phone)
-                : true;
-
-              const courtMatch =
-                values.courtId != null
-                  ? Number(booking.courtId) === Number(values.courtId)
+              const filtered = bookings.filter((booking) => {
+                const nameMatch = values.name
+                  ? booking.fullName
+                      .toLowerCase()
+                      .includes(values.name.toLowerCase())
                   : true;
 
-              const paymentMatch = values.paymentStatus
-                ? values.paymentStatus === "paid"
-                  ? booking.isPaid
-                  : !booking.isPaid
-                : true;
+                const phoneMatch = values.phone
+                  ? booking.phone.includes(values.phone)
+                  : true;
 
-              return nameMatch && phoneMatch && courtMatch && paymentMatch;
-            });
+                const courtMatch =
+                  values.courtId != null
+                    ? Number(booking.courtId) === Number(values.courtId)
+                    : true;
 
-            setFilteredBookings(filtered);
-          }}
-          onReset={resetSearch}
-          courtsData={courtsData}
-        />
+                const paymentMatch = values.paymentStatus
+                  ? values.paymentStatus === "paid"
+                    ? booking.isPaid
+                    : !booking.isPaid
+                  : true;
+
+                return nameMatch && phoneMatch && courtMatch && paymentMatch;
+              });
+
+              setFilteredBookings(filtered);
+            }}
+            onReset={resetSearch}
+            courtsData={courtsData}
+          />
+        </div>
 
         {/* Bảng với thanh cuộn cải tiến */}
-        <TableScroll
-          columns={columns}
-          dataSource={filteredBookings}
-          resetSearch={resetSearch}
-          searchCourt={searchCourt}
-          searchPaymentStatus={searchPaymentStatus}
-        />
+        <div className="w-full max-w-full sm:max-w-2xl lg:max-w-5xl mx-auto">
+          <TableScroll
+            columns={columns}
+            dataSource={filteredBookings}
+            resetSearch={resetSearch}
+            searchCourt={searchCourt}
+            searchPaymentStatus={searchPaymentStatus}
+          />
+        </div>
         <Modal
           open={isOpenModal}
           onCancel={() => setIsOpenModal(false)}
@@ -484,19 +488,20 @@ const handleCourtChange = (courtId: number) => {
                   Chọn Sân
                 </label>
                 <Select
-  showSearch
-  placeholder="Chọn sân"
-  optionFilterProp="children"
-  onChange={handleCourtChange} // vẫn dùng hàm trên
-  filterOption={(input, option) =>
-    (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-  }
-  options={courtsData.map((court) => ({
-    value: String(court.id), // Select cần value là string
-    label: court.name,
-  }))}
-/>
-
+                  showSearch
+                  placeholder="Chọn sân"
+                  optionFilterProp="children"
+                  onChange={handleCourtChange}
+                  filterOption={(input, option) =>
+                    (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                  }
+                  options={courtsData.map((court) => ({
+                    value: String(court.id),
+                    label: court.name,
+                  }))}
+                  className="w-full"
+                  size="large"
+                />
                 {error.courtId && (
                   <p className="text-red-500 text-sm">{error.courtId}</p>
                 )}
@@ -583,6 +588,7 @@ const handleCourtChange = (courtId: number) => {
                       options={generateTimeSlots()}
                       value={formData.startTime}
                       onChange={(value) => handleChange("startTime", value)}
+                      size="large"
                     />
                     {error.startTime && (
                       <p className="text-red-500 text-sm">{error.startTime}</p>
@@ -597,6 +603,7 @@ const handleCourtChange = (courtId: number) => {
                       options={DURATION_OPTIONS}
                       value={formData.duration}
                       onChange={(value) => handleChange("duration", value)}
+                      size="large"
                     />
                     {error.duration && (
                       <p className="text-red-500 text-sm">{error.duration}</p>
