@@ -1,6 +1,8 @@
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, getDocs, query } from "firebase/firestore";
+import { collection, getDocs, query, doc, getDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
+import dayjs from 'dayjs';
 
 interface Message {
   id: number;
@@ -22,6 +24,32 @@ interface Booking {
   endTime: string;
 }
 
+interface BookingData {
+  bookingCode: string;
+  courtName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  fullName: string;
+  email: string;
+  isPaid?: boolean;
+}
+
+const COMMANDS = {
+  CANCEL_BOOKING: {
+    command: '/huydatsan',
+    description: 'Hủy đặt sân',
+    usage: '/huydatsan [mã đặt sân]',
+    example: '/huydatsan ABC123'
+  },
+  HELP: {
+    command: '/help',
+    description: 'Xem danh sách lệnh',
+    usage: '/help',
+    example: '/help'
+  }
+};
+
 const ChatBotWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,6 +57,7 @@ const ChatBotWidget: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(false);
 
   // Lấy giờ phút hiện tại
   const getCurrentTime = (): string => {
@@ -76,7 +105,7 @@ const ChatBotWidget: React.FC = () => {
   // Xử lý các action nhanh
   const handleQuickAction = async (action: string) => {
     const actionNames: Record<string, string> = {
-      'book': 'Đặt sân ngay',
+      'cancel': 'Hủy đặt sân',
       'price': 'Xem bảng giá',
       'schedule': 'Kiểm tra lịch sân',
       'contact': 'Thông tin liên hệ',
@@ -122,9 +151,14 @@ const ChatBotWidget: React.FC = () => {
       return;
     }
 
+    if (action === "cancel") {
+      addMessage("Để hủy đặt sân, vui lòng sử dụng lệnh: /huydatsan [mã đặt sân]<br>Ví dụ: /huydatsan ABC123");
+      return;
+    }
+
     // Các action mặc định
     const responses: Record<string, string> = {
-      'book': "🏸 <strong>Đặt sân cầu lông</strong><br>Vui lòng vào mục đặt sân để thao tác chi tiết hoặc liên hệ nhân viên để được hỗ trợ.",
+      'cancel': "❌ <strong>Hủy đặt sân</strong><br>Để hủy đặt sân, vui lòng sử dụng lệnh: /huydatsan [mã đặt sân]<br>Ví dụ: /huydatsan ABC123",
       'contact': "📞 <strong>Thông tin liên hệ</strong><br><b>Thế Giới Cầu Lông</b><br>📍 Số 8 Trần Phú, P.Bình Định, Tx. An Nhơn<br>📱 Hotline: 0393118322<br>🕐 Giờ mở cửa: 5h - 22h hàng ngày",
       'services': "🔧 <strong>Dịch vụ khác</strong><br>• 🏸 Cho thuê vợt<br>• 🚿 Phòng tắm<br>• 🥤 Nước uống & snack<br>• 🏆 Tổ chức giải đấu<br>• 🎓 Dạy cầu lông<br>• 🚗 Chỗ để xe miễn phí",
       'chat': "💬 <strong>Kết nối nhân viên</strong><br>Đang chuyển sang chat trực tiếp...<br>⏰ Thời gian chờ: 1-2 phút"
@@ -132,37 +166,160 @@ const ChatBotWidget: React.FC = () => {
     setIsTyping(true);
     setTimeout(() => {
       setIsTyping(false);
-      addMessage(responses[action] || "Tôi có thể hỗ trợ bạn:<br>🏸 Đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ");
+      addMessage(responses[action] || "Tôi có thể hỗ trợ bạn:<br>❌ Hủy đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ");
     }, 800);
   };
 
   // Xử lý gửi tin nhắn
-  const sendMessage = async () => {
-    if (inputValue.trim() === '') return;
-    addMessage(inputValue, true);
+  const handleSend = async () => {
+    if (!inputValue.trim()) return;
 
-    // Tìm từ khóa để trả lời
-    const lower = inputValue.toLowerCase();
-    if (lower.includes("giá") || lower.includes("price")) {
-      await handleQuickAction("price");
-    } else if (lower.includes("lịch") || lower.includes("trống") || lower.includes("schedule")) {
-      await handleQuickAction("schedule");
-    } else if (lower.includes("liên hệ") || lower.includes("hotline") || lower.includes("địa chỉ")) {
-      await handleQuickAction("contact");
-    } else if (lower.includes("dịch vụ")) {
-      await handleQuickAction("services");
-    } else if (lower.includes("đặt") || lower.includes("book")) {
-      await handleQuickAction("book");
-    } else if (lower.includes("chat") || lower.includes("nhân viên")) {
-      await handleQuickAction("chat");
+    // Thêm tin nhắn của user
+    const userMessage: Message = {
+      id: Date.now() + Math.random(),
+      content: inputValue,
+      isUser: true,
+      timestamp: getCurrentTime()
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Xử lý lệnh nếu là command
+    if (inputValue.startsWith('/')) {
+      const [command, ...params] = inputValue.split(' ');
+      
+      switch (command) {
+        case COMMANDS.CANCEL_BOOKING.command:
+          await handleCancelCommand(params);
+          break;
+        case COMMANDS.HELP.command:
+          handleHelpCommand();
+          break;
+        default:
+          addMessage('Xin lỗi, tôi không hiểu lệnh này. Gõ /help để xem danh sách lệnh.', true);
+      }
     } else {
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        addMessage("Tôi có thể hỗ trợ bạn:<br>🏸 Đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ");
-      }, 800);
+      // Xử lý tin nhắn thông thường
+      const lower = inputValue.toLowerCase();
+      if (lower.includes("giá") || lower.includes("price")) {
+        await handleQuickAction("price");
+      } else if (lower.includes("lịch") || lower.includes("trống") || lower.includes("schedule")) {
+        await handleQuickAction("schedule");
+      } else if (lower.includes("liên hệ") || lower.includes("hotline") || lower.includes("địa chỉ")) {
+        await handleQuickAction("contact");
+      } else if (lower.includes("dịch vụ")) {
+        await handleQuickAction("services");
+      } else if (lower.includes("hủy") || lower.includes("cancel")) {
+        await handleQuickAction("cancel");
+      } else if (lower.includes("chat") || lower.includes("nhân viên")) {
+        await handleQuickAction("chat");
+      } else {
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+          addMessage("Tôi có thể hỗ trợ bạn:<br>❌ Hủy đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ");
+        }, 800);
+      }
     }
+
     setInputValue('');
+  };
+
+  const handleCancelCommand = async (params: string[]) => {
+    if (params.length === 0) {
+      addMessage('❌ Vui lòng nhập mã đặt sân.<br>Cú pháp: /huydatsan [mã đặt sân]<br>Ví dụ: /huydatsan ABC123');
+      return;
+    }
+
+    const bookingCode = params[0].toUpperCase();
+    if (!/^[A-Z0-9]{6}$/.test(bookingCode)) {
+      addMessage('❌ Mã đặt sân không hợp lệ! Mã đặt sân phải có 6 ký tự và chỉ bao gồm chữ cái và số.');
+      return;
+    }
+
+    setLoading(true);
+    addMessage('🔍 Đang kiểm tra thông tin đặt sân...');
+
+    try {
+      const bookingRef = doc(db, "bookings", bookingCode);
+      const bookingSnap = await getDoc(bookingRef);
+
+      if (!bookingSnap.exists()) {
+        addMessage("❌ Mã đặt sân không tồn tại! Vui lòng kiểm tra lại mã đặt sân của bạn.");
+        return;
+      }
+
+      const bookingData = bookingSnap.data() as BookingData;
+      
+      if (bookingData.isPaid) {
+        addMessage("❌ Không thể hủy sân đã thanh toán!<br>Vui lòng liên hệ trực tiếp với nhân viên qua số hotline: 0393118322 để được hỗ trợ.");
+        return;
+      }
+
+      // Tính toán thời gian chính xác
+      const now = dayjs();
+      const bookingDateTime = dayjs(`${bookingData.date} ${bookingData.startTime}`, "YYYY-MM-DD HH:mm");
+
+      // Kiểm tra nếu ngày đặt sân đã qua
+      if (bookingDateTime.isBefore(now)) {
+        addMessage("❌ Không thể hủy sân đã qua!");
+        return;
+      }
+
+      const hoursDiff = bookingDateTime.diff(now, 'hour', true);
+
+      if (hoursDiff < 2) {
+        addMessage("❌ Không thể hủy sân! Bạn chỉ có thể hủy sân trước giờ đặt ít nhất 2 tiếng.");
+        return;
+      }
+
+      try {
+        await deleteDoc(bookingRef);
+        
+        // Gửi email thông báo hủy sân
+        try {
+          await fetch('https://script.google.com/macros/s/AKfycbwJVBLvRETzdCHJTD8Jo6vmNmruLGn1Y9MdoiZocRvAe6MH_ECmeYG8XZOJPGzRYpF-4Q/exec', {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: bookingData.email,
+              type: 'cancel',
+              formData: {
+                bookingCode,
+                courtName: bookingData.courtName,
+                date: dayjs(bookingData.date).format('DD/MM/YYYY'),
+                startTime: bookingData.startTime,
+                endTime: bookingData.endTime,
+                fullName: bookingData.fullName
+              }
+            })
+          });
+          addMessage(`✅ Hủy sân thành công!<br>📧 Email xác nhận đã được gửi tới địa chỉ: ${bookingData.email}`);
+        } catch (emailError) {
+          console.error("Lỗi khi gửi email:", emailError);
+          addMessage("✅ Hủy sân thành công!<br>⚠️ Tuy nhiên không thể gửi email xác nhận. Vui lòng kiểm tra lại email của bạn hoặc liên hệ nhân viên nếu cần hỗ trợ.");
+        }
+      } catch (error) {
+        console.error("Lỗi khi hủy sân:", error);
+        addMessage("❌ Có lỗi xảy ra khi hủy sân! Vui lòng thử lại sau hoặc liên hệ nhân viên để được hỗ trợ.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra mã đặt sân:", error);
+      addMessage("❌ Có lỗi xảy ra khi kiểm tra mã đặt sân! Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleHelpCommand = () => {
+    const commandList = Object.values(COMMANDS);
+    const helpMessage = [
+      '📝 Danh sách lệnh:',
+      ...commandList.map(cmd => `${cmd.command}: ${cmd.description}\nVí dụ: ${cmd.example}`)
+    ].join('\n\n');
+    addMessage(helpMessage);
   };
 
   const toggleChat = () => {
@@ -172,7 +329,7 @@ const ChatBotWidget: React.FC = () => {
 
   useEffect(() => {
     if (messages.length === 0) {
-      const welcomeMessage = `<strong>Chào mừng bạn đến Thế Giới Cầu Lông!</strong> 🏸<br><br>Tôi có thể hỗ trợ bạn:<br>🏸 Đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ<br><br>Bạn cần hỗ trợ gì?`;
+      const welcomeMessage = `<strong>Chào mừng bạn đến Thế Giới Cầu Lông!</strong> 🏸<br><br>Tôi có thể hỗ trợ bạn:<br>❌ Hủy đặt sân<br>💰 Xem giá<br>📅 Kiểm tra lịch<br>📞 Liên hệ<br><br>Bạn cần hỗ trợ gì?`;
       setTimeout(() => addMessage(welcomeMessage), 800);
     }
   }, []);
@@ -182,6 +339,13 @@ const ChatBotWidget: React.FC = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isTyping, isOpen]);
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
@@ -243,10 +407,10 @@ const ChatBotWidget: React.FC = () => {
           <div className="p-2 bg-white border-t border-gray-100">
             <div className="grid grid-cols-3 gap-1 mb-2">
               <button
-                onClick={() => handleQuickAction('book')}
+                onClick={() => handleQuickAction('cancel')}
                 className="bg-green-100 text-green-700 p-1.5 rounded-lg text-xs hover:bg-green-200 transition-colors"
               >
-                🏸 Đặt sân
+                🏸 Hủy sân
               </button>
               <button
                 onClick={() => handleQuickAction('price')}
@@ -268,13 +432,15 @@ const ChatBotWidget: React.FC = () => {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                onKeyPress={handleKeyPress}
                 placeholder="Nhập tin nhắn..."
                 className="flex-1 p-2 border border-gray-200 rounded-full text-sm outline-none focus:border-blue-500"
+                disabled={loading}
               />
               <button
-                onClick={sendMessage}
-                className="w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center text-sm"
+                onClick={handleSend}
+                disabled={loading}
+                className="w-8 h-8 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center text-sm disabled:opacity-50"
               >
                 ➤
               </button>
@@ -284,20 +450,20 @@ const ChatBotWidget: React.FC = () => {
       )}
 
       {/* Chat Button */}
-{!isOpen && (
-  <button
-    onClick={toggleChat}
-    className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-xl transition-all duration-300 hover:scale-110 bg-gradient-to-r from-blue-500 to-green-500"
-    style={{ position: 'relative' }}
-  >
-    💬
-    {hasNewMessage && (
-      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-      </div>
-    )}
-  </button>
-)}
+      {!isOpen && (
+        <button
+          onClick={toggleChat}
+          className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-xl transition-all duration-300 hover:scale-110 bg-gradient-to-r from-blue-500 to-green-500"
+          style={{ position: 'relative' }}
+        >
+          💬
+          {hasNewMessage && (
+            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            </div>
+          )}
+        </button>
+      )}
       <style jsx>{`
         @keyframes slide-up {
           from { opacity: 0; transform: translateY(20px); }

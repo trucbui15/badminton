@@ -15,6 +15,7 @@ export interface FormDataType {
   totalPrice: number;
   // timestamp: any; // Using any for Firebase timestamp
   isPaid: boolean;
+  bookingCode?: string; // Thêm bookingCode là optional
   // paidAt?: any; // Option
 }
 export interface CourtType {
