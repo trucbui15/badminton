@@ -288,7 +288,7 @@ export default function DashboardPage() {
                 style={{
                   minWidth: windowWidth < 640 ? 320 : 0, // Đảm bảo không bị bóp nhỏ trên mobile
                   height: windowWidth < 640 ? "220px" : "45vh",
-                  minHeight: "180px",
+                  minHeight: "220px",
                   maxHeight: "400px",
                 }}
               >

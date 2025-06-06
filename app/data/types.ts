@@ -17,6 +17,13 @@ export interface FormDataType {
   isPaid: boolean;
   bookingCode?: string; // Thêm bookingCode là optional
   // paidAt?: any; // Option
+  
+  // Các trường cho đặt sân theo tháng
+  isMonthly?: boolean;
+  monthlyStartDate?: string;
+  monthlyEndDate?: string;
+  hoursPerSession?: number;
+  discountPercent?: number;
 }
 export interface CourtType {
   id: number;

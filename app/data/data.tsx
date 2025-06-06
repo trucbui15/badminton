@@ -1,12 +1,31 @@
-import { Button, Popconfirm } from "antd";
+import { Button, Popconfirm, Tag } from "antd";
 import { CheckCircleOutlined, DollarOutlined, DeleteOutlined } from "@ant-design/icons";
-import { FormDataType } from "./types"; // Import the FormDataType interface
+import { FormDataType } from "./types"; // Import interface FormDataType
+import dayjs from "dayjs"; // Đảm bảo bạn đã import dayjs
+
+// Hàm helper để format ngày tháng với định dạng tùy chỉnh
+const formatDate = (date: string | dayjs.Dayjs | null | undefined, format: string = "DD/MM/YYYY"): string => {
+  if (!date) return "";
+  // if (typeof date === "string") return date;
+  return dayjs(date).format(format);
+};
 
 // Các hàm xử lý sẽ được truyền từ component cha qua props
 export const getColumns = (
   handlePaymentStatus: (record: FormDataType) => void,
   handleDelete: (record: FormDataType) => void
 ) => [
+  {
+    title: "Loại đặt",
+    key: "bookingType",
+    width: 100,
+    className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <Tag color={record.isMonthly ? "blue" : "green"}>
+        {record.isMonthly ? "Theo tháng" : "Đặt lẻ"}
+      </Tag>
+    ),
+  },
   {
     title: "Họ Tên",
     dataIndex: "fullName",
@@ -38,12 +57,20 @@ export const getColumns = (
     ellipsis: true,
     className: "text-xs",
   },
-  {
+   {
     title: "Ngày Đặt Sân",
-    dataIndex: "date",
     key: "date",
     width: 100,
     className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <span>
+        {record.isMonthly ? (
+          `${formatDate(record.monthlyStartDate, "DD/MM/YYYY")} - ${formatDate(record.monthlyEndDate, "DD/MM/YYYY")}`
+        ) : (
+          formatDate(record.date, "DD/MM/YYYY")
+        )}
+      </span>
+    ),
   },
   {
     title: "Khung giờ",
@@ -58,11 +85,18 @@ export const getColumns = (
   },
   {
     title: "Thời lượng",
-    dataIndex: "duration",
     key: "duration",
     width: 70,
     className: "text-xs",
-    render: (duration: number | string) => `${duration} giờ`,
+    render: (_: unknown, record: FormDataType) => (
+      <span>
+        {record.isMonthly ? (
+          `${record.hoursPerSession}h/ngày`
+        ) : (
+          `${record.duration}`
+        )}
+      </span>
+    ),
   },
   {
     title: "Tổng tiền",
@@ -72,76 +106,58 @@ export const getColumns = (
     className: "text-xs",
     render: (total: number) => `${total?.toLocaleString()} VND`,
   },
-  // {
-  //   title: "Trạng thái",
-  //   key: "paymentStatus",
-  //   width: 120,
-  //   className: "text-xs",
-  //   render: (_: unknown, record: FormDataType) => (
-  //     <Tag
-  //       color={record.isPaid ? "green" : "orange"}
-  //       className="text-center px-2 py-1"
-  //     >
-  //       {record.isPaid ? (
-  //         <>
-  //           <CheckCircleOutlined /> Đã thanh toán
-  //         </>
-  //       ) : (
-  //         "Chưa thanh toán"
-  //       )}
-  //     </Tag>
-  //   ),
-  // },
   {
-  title: "Hành động",
-  key: "action",
-  width: 200,
-  fixed: "right" as const,
-  align: "center" as const, // ✅ Ép kiểu đúng
-  className: "text-xs text-center", // ✅ Chỉ ảnh hưởng tiêu đề
+    title: "Trạng thái",
+    key: "status",
+    width: 100,
+    className: "text-xs",
     render: (_: unknown, record: FormDataType) => (
-      <div className="flex items-center gap-[20px]">
-        {!record.isPaid ? (
-          <Popconfirm
-            title="Xác nhận thanh toán"
-            description={`Xác nhận thanh toán cho đặt sân của ${record.fullName}?`}
-            onConfirm={() => handlePaymentStatus(record)}
-            okText="Xác nhận"
-            cancelText="Hủy"
-          >
-            <Button
-              type="primary"
-              icon={<DollarOutlined />}
-              className="bg-green-500 hover:bg-green-600 px-[20px] py-[6px] min-w-[120px]"
-              size="small"
-            >
-              Thanh toán
-            </Button>
-          </Popconfirm>
-        ) : (
-          <Button
-            type="default"
-            size="small"
-            disabled
-            className="text-green-500 px-[20px] py-[6px] min-w-[120px]"
-            icon={<CheckCircleOutlined />}
-          >
-            Đã thanh toán
-          </Button>
-        )}
-
+      record.isPaid ? (
+        <Button
+          type="text"
+          icon={<CheckCircleOutlined />}
+          className="text-green-500"
+        >
+          Đã thanh toán
+        </Button>
+      ) : (
         <Popconfirm
-          title="Xác nhận xóa"
-          description={`Bạn có chắc chắn muốn xóa đặt sân của ${record.fullName}?`}
-          onConfirm={() => handleDelete(record)}
-          okText="Xóa"
+          title="Xác nhận thanh toán?"
+          onConfirm={() => handlePaymentStatus(record)}
+          okText="Đồng ý"
           cancelText="Hủy"
         >
-          <Button danger icon={<DeleteOutlined />} size="small">
-            Xóa
+          <Button
+            type="primary"
+            icon={<DollarOutlined />}
+          >
+            Thanh toán
           </Button>
         </Popconfirm>
-      </div>
+      )
+    ),
+  },
+  {
+    title: "Thao tác",
+    key: "action",
+    width: 80,
+    className: "text-xs",
+    render: (_: unknown, record: FormDataType) => (
+      <Popconfirm
+        title="Xác nhận xóa?"
+        onConfirm={() => handleDelete(record)}
+        okText="Đồng ý"
+        cancelText="Hủy"
+      >
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          className="text-red-500"
+        >
+          Xóa
+        </Button>
+      </Popconfirm>
     ),
   },
 ];

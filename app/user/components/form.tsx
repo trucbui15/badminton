@@ -1,29 +1,11 @@
 "use client";
-import {
-  collection,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-  runTransaction,
-  doc,
-} from "firebase/firestore";
+import {collection, serverTimestamp, query, where, getDocs, runTransaction, doc} from "firebase/firestore";
 import { db } from "@/app/source/firebaseConfig";
 import { useState, useEffect, useCallback } from "react";
-import {
-  Input,
-  Select,
-  DatePicker,
-  Typography,
-  Space,
-  Modal,
-  Image,
-  Divider,
-  Button,
-  Tag,
-} from "antd";
+import { Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Tag,} from "antd";
 import dayjs, { Dayjs } from "dayjs";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+// kiểm tra xem giờ đã qua ch
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";  
 dayjs.extend(isSameOrBefore);
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
 import { isTimeConflict } from "@/app/source/timeprocessing";
@@ -58,13 +40,9 @@ const [isMonthly, setIsMonthly] = useState(false);
 const [monthlyStartDate, setMonthlyStartDate] = useState<dayjs.Dayjs | null>(dayjs());
 const [monthlyEndDate, setMonthlyEndDate] = useState<dayjs.Dayjs | null>(dayjs().add(1, "month"));
 const [monthlyStartTime, setMonthlyStartTime] = useState(""); // "18:00"
-const [sessionsPerWeek, setSessionsPerWeek] = useState(3);
 const [hoursPerSession, setHoursPerSession] = useState(2);
 const [discountPercent, setDiscountPercent] = useState(20);
 
-const getWeeksBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs) => {
-  return Math.ceil(end.diff(start, "day") / 7);
-};
   const [courtData, setCourtData] = useState<{
     id: number;
     name: string;
@@ -354,12 +332,11 @@ const getWeeksBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs) => {
     if (!formData.phone) error.phone = "Vui lòng nhập số điện thoại!";
     if (!formData.email) error.email = "Vui lòng nhập email!";
 
-    if (isMonthly) {
+          if (isMonthly) {
       // Kiểm tra các trường đặt tháng
       if (!monthlyStartDate) error.monthlyStartDate = "Chọn ngày bắt đầu!";
       if (!monthlyEndDate) error.monthlyEndDate = "Chọn ngày kết thúc!";
       if (!monthlyStartTime) error.monthlyStartTime = "Chọn giờ bắt đầu!";
-      if (!sessionsPerWeek) error.sessionsPerWeek = "Nhập số buổi/tuần!";
       if (!hoursPerSession) error.hoursPerSession = "Nhập số giờ/buổi!";
 
       // Kiểm tra giờ quá khứ cho đặt tháng
@@ -400,18 +377,15 @@ const getWeeksBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs) => {
       const bookingRef = collection(db, "bookings");
 
       if (isMonthly) {
-        // Đặt theo tháng: tạo nhiều booking
-        const weeks = getWeeksBetween(monthlyStartDate!, monthlyEndDate!);
-        const totalSessions = sessionsPerWeek * weeks;
+        // Đặt theo tháng: tạo booking cho mỗi ngày
         let current = monthlyStartDate!.clone();
-        let sessions = 0;
         const bookingsToAdd = [];
 
-        // Lặp qua từng ngày, lấy đủ số buổi
-        while (current.isSameOrBefore(monthlyEndDate!) && sessions < totalSessions) {
+        // Lặp qua từng ngày trong khoảng thời gian
+        while (current.isSameOrBefore(monthlyEndDate!)) {
           const bookingCode = generateBookingCode();
           bookingsToAdd.push({
-            bookingCode, // Thêm mã đặt sân
+            bookingCode,
             fullName: formData.fullName,
             phone: formData.phone,
             email: formData.email,
@@ -425,8 +399,13 @@ const getWeeksBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs) => {
             totalPrice: Math.round(courtData.price * hoursPerSession * (1 - discountPercent / 100)),
             isPaid: false,
             timestamp: serverTimestamp(),
+            // Thêm thông tin đặt sân theo tháng
+            isMonthly: true,
+            monthlyStartDate: monthlyStartDate?.format("DD/MM/YYYY"),
+            monthlyEndDate: monthlyEndDate?.format("DD/MM/YYYY"),
+            hoursPerSession: hoursPerSession,
+            discountPercent: discountPercent
           });
-          sessions++;
           current = current.add(1, "day");
         }
 
@@ -607,7 +586,7 @@ setFormData((prev) => ({
   const generateMonthlyTimeSlots = () => {
   const slots = [];
   let start = dayjs().hour(5).minute(0);
-  const end = dayjs().hour(21).minute(0);
+  const end = dayjs().hour(22).minute(0);
   while (start.isBefore(end) || start.isSame(end)) {
     slots.push({
       label: start.format("HH:mm"),
@@ -644,9 +623,14 @@ setFormData((prev) => ({
 
     const calculateMonthlyPrice = () => {
   if (!courtData || !monthlyStartDate || !monthlyEndDate) return 0;
-  const weeks = getWeeksBetween(monthlyStartDate, monthlyEndDate);
-  const totalSessions = sessionsPerWeek * weeks;
-  const total = courtData.price * hoursPerSession * totalSessions;
+  
+  // Tính số ngày giữa ngày bắt đầu và kết thúc
+  const days = monthlyEndDate.diff(monthlyStartDate, 'days') + 1;
+  
+  // Tính tổng giá
+  const total = courtData.price * hoursPerSession * days;
+  
+  // Áp dụng giảm giá
   const discounted = total * (1 - discountPercent / 100);
   return Math.round(discounted);
 };
@@ -864,16 +848,6 @@ setFormData((prev) => ({
                     />
                   </div>
                   <div>
-                    <label>Số buổi/tuần:</label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={7}
-                      value={sessionsPerWeek}
-                      onChange={e => setSessionsPerWeek(Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
                     <label>Giảm giá (%):</label>
                     <Input
                       type="number"
@@ -892,7 +866,7 @@ setFormData((prev) => ({
                   <br />
                   <span className="text-gray-600 text-sm">
                     {monthlyStartDate && monthlyEndDate &&
-                      `${sessionsPerWeek * getWeeksBetween(monthlyStartDate, monthlyEndDate)} buổi từ ${monthlyStartDate.format("DD/MM/YYYY")} đến ${monthlyEndDate.format("DD/MM/YYYY")}, mỗi buổi ${hoursPerSession} giờ, bắt đầu lúc ${monthlyStartTime || "?"}`}
+                      `Đặt sân từ ${monthlyStartDate.format("DD/MM/YYYY")} đến ${monthlyEndDate.format("DD/MM/YYYY")}, mỗi ngày ${hoursPerSession} giờ, bắt đầu lúc ${monthlyStartTime || "?"}`}
                   </span>
                 </div>
               </div>
@@ -926,13 +900,17 @@ setFormData((prev) => ({
                 <strong>Loại sân:</strong> {courtData.type}
               </p>
               <p>
-                <strong>Giờ bắt đầu:</strong> {formData.startTime}
+                <strong>Giờ bắt đầu:</strong> {isMonthly ? monthlyStartTime : formData.startTime}
               </p>
               <p>
-                <strong>Giờ kết thúc:</strong> {formData.endTime}
+                <strong>Giờ kết thúc:</strong> {isMonthly 
+                  ? dayjs(monthlyStartTime, "HH:mm").add(hoursPerSession, "hour").format("HH:mm")
+                  : formData.endTime}
               </p>
               <p>
-                <strong>Tổng tiền:</strong> {calculatePrice().toLocaleString()}{" "}
+                <strong>Tổng tiền:</strong> {isMonthly 
+                  ? calculateMonthlyPrice().toLocaleString()
+                  : calculatePrice().toLocaleString()}{" "}
                 VND
               </p>
               {formData.date && courtData && (

@@ -57,10 +57,10 @@ const TableScroll = ({
           return (
             <>
   {/* Tổng tiền */}
-  <Table.Summary.Row className="bg-gray-100">
+  <Table.Summary.Row className="bg--100">
     <Table.Summary.Cell
       index={0}
-      colSpan={7}
+      colSpan={8}
       className="text-right text-sm font-semibold text-gray-800 pr-4"
     >
       💰 Tổng tiền (trang hiện tại):
@@ -75,10 +75,10 @@ const TableScroll = ({
   </Table.Summary.Row>
 
   {/* Đã thanh toán */}
-  <Table.Summary.Row className="bg-gray-100">
+  <Table.Summary.Row className="bg--100">
     <Table.Summary.Cell
       index={0}
-      colSpan={7}
+      colSpan={8}
       className="text-right text-sm font-semibold text-gray-800 pr-4"
     >
       ✅ <span className="text-green-600">Đã thanh toán:</span>
@@ -96,14 +96,14 @@ const TableScroll = ({
   <Table.Summary.Row className="bg-gray-100 border-t border-gray-300">
     <Table.Summary.Cell
       index={0}
-      colSpan={7}
+      colSpan={8}
       className="text-right text-sm font-semibold text-gray-800 pr-4"
     >
       ❌ <span className="text-orange-500">Chưa thanh toán:</span>
     </Table.Summary.Cell>
     <Table.Summary.Cell
       index={1}
-      colSpan={2}
+      colSpan={4}
       className="text-left text-sm font-semibold text-orange-500 pl-2"
     >
       {unpaidAmount.toLocaleString()} VND
