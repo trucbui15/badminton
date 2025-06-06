@@ -289,7 +289,7 @@ export default function DashboardPage() {
                   minWidth: windowWidth < 640 ? 320 : 0, // Đảm bảo không bị bóp nhỏ trên mobile
                   height: windowWidth < 640 ? "220px" : "45vh",
                   minHeight: "220px",
-                  maxHeight: "400px",
+                  maxHeight: "350px",
                 }}
               >
                 <ResponsiveContainer width="100%" height="100%">
