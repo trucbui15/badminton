@@ -4,7 +4,7 @@ import { db } from "@/app/source/firebaseConfig";
 import { useState, useEffect, useCallback } from "react";
 import { Input, Select, DatePicker, Typography, Space, Modal, Image, Divider, Button, Tag,} from "antd";
 import dayjs, { Dayjs } from "dayjs";
-// kiểm tra xem giờ đã qua ch
+// kiểm tra xem giờ đã qua chưa
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";  
 dayjs.extend(isSameOrBefore);
 import { CheckCircleTwoTone, ArrowLeftOutlined } from "@ant-design/icons";
@@ -36,12 +36,12 @@ export default function BookingModal({ court }: { court: number }) {
   const [isComposing, setIsComposing] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [selectedCourtId, setSelectedCourtId] = useState<number | null>(null);
-const [isMonthly, setIsMonthly] = useState(false);
-const [monthlyStartDate, setMonthlyStartDate] = useState<dayjs.Dayjs | null>(dayjs());
-const [monthlyEndDate, setMonthlyEndDate] = useState<dayjs.Dayjs | null>(dayjs().add(1, "month"));
-const [monthlyStartTime, setMonthlyStartTime] = useState(""); // "18:00"
-const [hoursPerSession, setHoursPerSession] = useState(2);
-const [discountPercent, setDiscountPercent] = useState(20);
+  const [isMonthly, setIsMonthly] = useState(false);
+  const [monthlyStartDate, setMonthlyStartDate] = useState<dayjs.Dayjs | null>(dayjs());
+  const [monthlyEndDate, setMonthlyEndDate] = useState<dayjs.Dayjs | null>(dayjs().add(1, "month"));
+  const [monthlyStartTime, setMonthlyStartTime] = useState(""); // "18:00"
+  const [hoursPerSession, setHoursPerSession] = useState(2);
+  const [discountPercent, setDiscountPercent] = useState(20);
 
   const [courtData, setCourtData] = useState<{
     id: number;
@@ -80,6 +80,65 @@ const [discountPercent, setDiscountPercent] = useState(20);
   });
 
   const [error, setError] = useState<{ [key: string]: string }>({});
+
+  // 1. State để lưu slot hợp lệ
+  const [monthlyTimeSlots, setMonthlyTimeSlots] = useState<{ label: string; value: string; disabled: boolean }[]>([]);
+
+  // 2. Hàm async lấy slot hợp lệ
+  const fetchMonthlyTimeSlots = async () => {
+    const slots = [];
+    let start = dayjs().hour(5).minute(0);
+    const end = dayjs().hour(22).minute(0);
+    const disabledTimes = new Set<string>();
+
+    if (courtData && monthlyStartDate && monthlyEndDate) {
+      let current = monthlyStartDate.clone();
+      while (current.isSameOrBefore(monthlyEndDate)) {
+        const q = query(
+          collection(db, "bookings"),
+          where("courtId", "==", courtData.id),
+          where("date", "==", current.format("YYYY-MM-DD"))
+        );
+        const querySnapshot = await getDocs(q);
+        const existingBookings = querySnapshot.docs.map((doc) => doc.data());
+
+        let slot = dayjs().hour(5).minute(0);
+        while (slot.isBefore(end) || slot.isSame(end)) {
+          const slotStart = slot.format("HH:mm");
+          const slotEnd = slot.clone().add(hoursPerSession, "hour").format("HH:mm");
+          const hasConflict = isTimeConflict(
+            slotStart,
+            slotEnd,
+            existingBookings.map((b) => ({
+              startTime: b.startTime,
+              endTime: b.endTime,
+            }))
+          );
+          if (hasConflict) {
+            disabledTimes.add(slotStart);
+          }
+          slot = slot.add(30, "minute");
+        }
+        current = current.add(1, "day");
+      }
+    }
+
+    while (start.isBefore(end) || start.isSame(end)) {
+      const timeStr = start.format("HH:mm");
+      slots.push({
+        label: timeStr + (disabledTimes.has(timeStr) ? " (Đã đặt)" : ""),
+        value: timeStr,
+        disabled: disabledTimes.has(timeStr),
+      });
+      start = start.add(30, "minute");
+    }
+    return slots;
+  };
+
+  // 3. useEffect để load slot mỗi khi dependency thay đổi
+  useEffect(() => {
+    fetchMonthlyTimeSlots().then(setMonthlyTimeSlots);
+  }, [courtData, monthlyStartDate, monthlyEndDate, hoursPerSession]);
 
   useEffect(() => {
     const fetchCourtData = async () => {
@@ -178,10 +237,10 @@ const [discountPercent, setDiscountPercent] = useState(20);
   const generateTimeSlots = () => {
     const slots = [];
     let start = dayjs().hour(5).minute(0); // 05:00
-    const end = dayjs().hour(22).minute(0); // 21:00
+    const end = dayjs().hour(22).minute(0); // 22:00
     const now = dayjs();
 
-    // Bao gồm cả mốc 21:00
+    // Bao gồm cả mốc 22:00
     while (start.isBefore(end) || start.isSame(end)) {
       const timeStr = start.format("HH:mm");
       const isBooked = checkTimeSlotBooked(timeStr);
@@ -291,13 +350,12 @@ const [discountPercent, setDiscountPercent] = useState(20);
         endTime: b.endTime,
       }));
 
-      // Log tiếng Việt để kiểm tra dữ liệu
-      console.log("▶️ Giờ bắt đầu bạn chọn:", formData.startTime);
-      console.log("▶️ Thời lượng bạn chọn:", formData.duration);
-      console.log("▶️ Ngày bạn chọn:", formData.date);
-      console.log("▶️ Giờ kết thúc tính được:", endTime);
-      console.log("▶️ Danh sách đặt sân realtime:", realtimeBookings);
-      console.log("▶️ Danh sách khung giờ đã đặt để kiểm tra trùng:", bookings);
+      console.log(" Giờ bắt đầu bạn chọn:", formData.startTime);
+      console.log(" Thời lượng bạn chọn:", formData.duration);
+      console.log(" Ngày bạn chọn:", formData.date);
+      console.log(" Giờ kết thúc tính được:", endTime);
+      console.log(" Danh sách đặt sân realtime:", realtimeBookings);
+      console.log(" Danh sách khung giờ đã đặt để kiểm tra trùng:", bookings);
 
       const isConflict = isTimeConflict(formData.startTime, endTime, bookings);
 
@@ -380,18 +438,42 @@ const [discountPercent, setDiscountPercent] = useState(20);
         // Đặt theo tháng: tạo booking cho mỗi ngày
         let current = monthlyStartDate!.clone();
         const bookingsToAdd = [];
+        const conflictDates: string[] = [];
 
-        // Lặp qua từng ngày trong khoảng thời gian
         while (current.isSameOrBefore(monthlyEndDate!)) {
-          const bookingCode = generateBookingCode();
+          // Lấy booking lẻ đã có cho ngày này
+          const q = query(
+            bookingRef,
+            where("courtId", "==", courtData.id),
+            where("date", "==", current.format("YYYY-MM-DD"))
+          );
+          const querySnapshot = await getDocs(q);
+          const existingBookings = querySnapshot.docs.map((doc) => doc.data());
+
+          const startTime = monthlyStartTime;
+          const endTime = dayjs(monthlyStartTime, "HH:mm").add(hoursPerSession, "hour").format("HH:mm");
+
+          const hasConflict = isTimeConflict(
+            startTime,
+            endTime,
+            existingBookings.map((b) => ({
+              startTime: b.startTime,
+              endTime: b.endTime,
+            }))
+          );
+
+          if (hasConflict) {
+            conflictDates.push(current.format("DD/MM/YYYY"));
+          }
+
           bookingsToAdd.push({
-            bookingCode,
+            bookingCode: generateBookingCode(),
             fullName: formData.fullName,
             phone: formData.phone,
             email: formData.email,
             date: current.format("YYYY-MM-DD"),
-            startTime: monthlyStartTime,
-            endTime: dayjs(monthlyStartTime, "HH:mm").add(hoursPerSession, "hour").format("HH:mm"),
+            startTime: startTime,
+            endTime: endTime,
             duration: `${hoursPerSession}h`,
             courtId: courtData.id,
             courtName: courtData.name,
@@ -399,7 +481,6 @@ const [discountPercent, setDiscountPercent] = useState(20);
             totalPrice: Math.round(courtData.price * hoursPerSession * (1 - discountPercent / 100)),
             isPaid: false,
             timestamp: serverTimestamp(),
-            // Thêm thông tin đặt sân theo tháng
             isMonthly: true,
             monthlyStartDate: monthlyStartDate?.format("DD/MM/YYYY"),
             monthlyEndDate: monthlyEndDate?.format("DD/MM/YYYY"),
@@ -407,6 +488,11 @@ const [discountPercent, setDiscountPercent] = useState(20);
             discountPercent: discountPercent
           });
           current = current.add(1, "day");
+        }
+
+        if (conflictDates.length > 0) {
+          alert("Không thể đặt tháng vì các ngày sau đã có người đặt: " + conflictDates.join(", "));
+          return;
         }
 
         // Lưu từng booking vào Firestore với mã đặt sân
@@ -583,19 +669,6 @@ setFormData((prev) => ({
   }
 };
 
-  const generateMonthlyTimeSlots = () => {
-  const slots = [];
-  let start = dayjs().hour(5).minute(0);
-  const end = dayjs().hour(22).minute(0);
-  while (start.isBefore(end) || start.isSame(end)) {
-    slots.push({
-      label: start.format("HH:mm"),
-      value: start.format("HH:mm"),
-    });
-    start = start.add(30, "minute");
-  }
-  return slots;
-};
   const calculatePrice = () => {
     if (!formData.date || !courtData) return 0;
 
@@ -814,6 +887,7 @@ setFormData((prev) => ({
                       value={monthlyStartDate}
                       onChange={setMonthlyStartDate}
                       format="DD/MM/YYYY"
+                      disabledDate={date => date && date.isBefore(dayjs(), "day")}
                     />
                   </div>
                   <div>
@@ -822,7 +896,7 @@ setFormData((prev) => ({
                       value={monthlyEndDate}
                       onChange={setMonthlyEndDate}
                       format="DD/MM/YYYY"
-                      disabledDate={date => date && date.isBefore(monthlyStartDate)}
+                      disabledDate={date => date && date.isBefore(monthlyStartDate || dayjs(), "day")}
                     />
                   </div>
                   <div>
@@ -832,7 +906,7 @@ setFormData((prev) => ({
             <Select
               className="w-full border border-gray-300 rounded-lg focus:border-blue-500 focus:ring focus:ring-blue-300"
               placeholder="Chọn giờ bắt đầu"
-              options={generateMonthlyTimeSlots()}
+              options={monthlyTimeSlots}
               value={monthlyStartTime}
               onChange={setMonthlyStartTime}
             />
